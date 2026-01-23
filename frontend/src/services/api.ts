@@ -5,6 +5,9 @@ import type { Response } from '../presentation/responses/Response';
 import type { CreateSubmissionResponse } from '../presentation/responses/Submission/CreateSubmissionResponse';
 import type { GetSubmissionsResponse } from '../presentation/responses/Submission/GetSubmissionsResponse';
 import type { UpdateSubmissionResponse } from '../presentation/responses/Submission/UpdateSubmissionResponse';
+import type { GetProvidersResponse, ProviderInfo } from '../presentation/responses/Provider/GetProvidersResponse';
+import type { SyncProviderResponse } from '../presentation/responses/Provider/SyncProviderResponse';
+import type { NormalizeProductsResponse } from '../presentation/responses/Provider/NormalizeProductsResponse';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -81,6 +84,41 @@ class ApiService {
     }
 
     return response.data;
+  }
+
+  // Provider methods
+  async getProviders(): Promise<ProviderInfo[]> {
+    const response = await this.request<{ providers: ProviderInfo[] }>('/providers', {
+      method: 'GET',
+    }) as GetProvidersResponse;
+
+    return response.providers || [];
+  }
+
+  async syncProvider(provider: string): Promise<SyncProviderResponse> {
+    const response = await this.request<{
+      provider: string;
+      sourceFilename: string;
+      productsCount: number;
+      processedCount: number;
+      errors: string[];
+    }>(`/providers/${provider}/sync`, {
+      method: 'POST',
+    }) as SyncProviderResponse;
+
+    return response;
+  }
+
+  async normalizeProducts(provider: string): Promise<NormalizeProductsResponse> {
+    const response = await this.request<{
+      processedCount: number;
+      errors: string[];
+      provider?: string;
+    }>(`/providers/${provider}/normalize`, {
+      method: 'POST',
+    }) as NormalizeProductsResponse;
+
+    return response;
   }
 }
 
