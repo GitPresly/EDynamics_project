@@ -22,7 +22,6 @@ build/
 node_modules/# Data files (uncomment if you want to exclude data)
 # data/
 data/providers/
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

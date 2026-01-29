@@ -1,6 +1,10 @@
+import { promises as fs } from 'fs';
+import path from 'path';
 import { IProvider } from '../../domain/providers/IProvider';
 import { ProductEntity } from '../../domain/entities/Product/ProductEntity';
 import { IHttpClient } from '../http/httpClient';
+
+const EASYGIFTS_LOCAL_SOURCE_PATH = path.resolve(process.cwd(), 'data/providers/easygifts/sources/source.json');
 
 export class EasyGiftsProvider implements IProvider {
   private httpClient: IHttpClient;
@@ -21,38 +25,25 @@ export class EasyGiftsProvider implements IProvider {
 
   async fetchProducts(): Promise<any[]> {
     try {
-      console.log(`Fetching products from EasyGifts API: ${this.apiUrl}`);
-      const response = await this.httpClient.get<any>(this.apiUrl);
+      // Quick patch: read from local source file instead of API
+      console.log(`Reading EasyGifts products from local file: ${EASYGIFTS_LOCAL_SOURCE_PATH}`);
+      const raw = await fs.readFile(EASYGIFTS_LOCAL_SOURCE_PATH, 'utf-8');
+      const data = JSON.parse(raw);
 
-      // Handle different response structures
-      if (Array.isArray(response)) {
-        console.log(`Successfully fetched ${response.length} products from EasyGifts`);
-        return response;
+      if (Array.isArray(data)) {
+        console.log(`Successfully loaded ${data.length} products from EasyGifts source file`);
+        return data;
+      }
+      if (data && typeof data === 'object' && Array.isArray(data.products)) {
+        console.log(`Successfully loaded ${data.products.length} products from EasyGifts source file`);
+        return data.products;
       }
 
-      if (response && typeof response === 'object') {
-        // Try common property names
-        if (Array.isArray(response.products)) {
-          console.log(`Successfully fetched ${response.products.length} products from EasyGifts`);
-          return response.products;
-        }
-        if (Array.isArray(response.data)) {
-          console.log(`Successfully fetched ${response.data.length} products from EasyGifts`);
-          return response.data;
-        }
-        if (Array.isArray(response.items)) {
-          console.log(`Successfully fetched ${response.items.length} products from EasyGifts`);
-          return response.items;
-        }
-      }
-
-      throw new Error('Invalid response format from EasyGifts API - expected array or object with products/data/items array');
+      throw new Error('Invalid format in EasyGifts source file - expected array or object with products array');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`Failed to fetch products from EasyGifts API (${this.apiUrl}):`, errorMessage);
-      throw new Error(
-        `Failed to fetch products from EasyGifts: ${errorMessage}`
-      );
+      console.error(`Failed to load EasyGifts products from file (${EASYGIFTS_LOCAL_SOURCE_PATH}):`, errorMessage);
+      throw new Error(`Failed to load EasyGifts products: ${errorMessage}`);
     }
   }
 

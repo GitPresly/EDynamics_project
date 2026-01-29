@@ -1,7 +1,7 @@
 import { SubmissionEntity } from '../../../domain/entities/Submission/SubmissionEntity';
 import { CreateSubmissionRequest } from '../../../presentation/requests/Submission/CreateSubmissionRequest';
 import { CreateSubmissionResponse } from '../../../presentation/responses/Submission/CreateSubmissionResponse';
-import { ISubmissionRepository } from '../../../infrastructure/fileSystem/fileRepository';
+import { ISubmissionRepository } from '../../../infrastructure/submissions/interfaces/ISubmissionRepository';
 
 export class CreateSubmissionUseCase {
   constructor(private repository: ISubmissionRepository) { }

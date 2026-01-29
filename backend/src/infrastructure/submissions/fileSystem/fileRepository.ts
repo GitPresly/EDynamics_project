@@ -1,8 +1,9 @@
 import 'dotenv/config';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { Submission } from '../../domain/entities/Submission/Submission';
-import { SubmissionEntity } from '../../domain/entities/Submission/SubmissionEntity';
+import { Submission } from '../../../domain/entities/Submission/Submission';
+import { SubmissionEntity } from '../../../domain/entities/Submission/SubmissionEntity';
+import { ISubmissionRepository } from '../interfaces/ISubmissionRepository';
 
 // Get DATA_FILE_PATH from environment variable, with fallback to default
 const getDataFilePath = (): string => {
@@ -16,17 +17,10 @@ const getDataFilePath = (): string => {
     return path.resolve(process.cwd(), envPath);
   }
   // Default fallback
-  return path.join(__dirname, '../../../data/submissions.json');
+  return path.join(__dirname, '../../../../data/submissions.json');
 };
 
 const DATA_FILE_PATH = getDataFilePath();
-
-export interface ISubmissionRepository {
-  save(submission: SubmissionEntity): Promise<void>;
-  findAll(): Promise<Submission[]>;
-  findById(id: string): Promise<Submission | null>;
-  saveAll(submissions: Submission[]): Promise<void>;
-}
 
 export class FileRepository implements ISubmissionRepository {
 

@@ -1,5 +1,4 @@
 import { Router, Request, Response } from 'express';
-import { FileRepository } from '../../infrastructure/fileSystem/fileRepository';
 import { CreateSubmissionRequest } from '../requests/Submission/CreateSubmissionRequest';
 import { CreateSubmissionResponse } from '../responses/Submission/CreateSubmissionResponse';
 import { UpdateSubmissionResponse } from '../responses/Submission/UpdateSubmissionResponse';
@@ -8,11 +7,12 @@ import { CreateSubmissionUseCase } from '../../application/usecases/Submission/C
 import { GetAllSubmissionsUseCase } from '../../application/usecases/Submission/GetAllSubmissionsUseCase';
 import { UpdateSubmissionUseCase } from '../../application/usecases/Submission/UpdateSubmissionUseCase';
 import { GetSubmissionByIdUseCase } from '../../application/usecases/Submission/GetSubmissionByIdUseCase';
+import { createSubmissionRepository } from '../../infrastructure/repositories/repositoryFactory';
 
 const router = Router();
 
 // Initialize repository and use cases (dependency injection)
-const repository = new FileRepository();
+const repository = createSubmissionRepository();
 const createSubmissionUseCase = new CreateSubmissionUseCase(repository);
 const getAllSubmissionsUseCase = new GetAllSubmissionsUseCase(repository);
 const updateSubmissionUseCase = new UpdateSubmissionUseCase(repository);

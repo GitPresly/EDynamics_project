@@ -2,10 +2,10 @@ import { SubmissionEntity } from '../../../domain/entities/Submission/Submission
 import { Submission } from '../../../domain/entities/Submission/Submission';
 import { CreateSubmissionRequest } from '../../../presentation/requests/Submission/CreateSubmissionRequest';
 import { UpdateSubmissionResponse } from '../../../presentation/responses/Submission/UpdateSubmissionResponse';
-import { ISubmissionRepository } from '../../../infrastructure/fileSystem/fileRepository';
+import { ISubmissionRepository } from '../../../infrastructure/submissions/interfaces/ISubmissionRepository';
 
 export class UpdateSubmissionUseCase {
-  constructor(private repository: ISubmissionRepository) {}
+  constructor(private repository: ISubmissionRepository) { }
 
   async execute(id: string, request: CreateSubmissionRequest): Promise<UpdateSubmissionResponse> {
     // Create entity with validation

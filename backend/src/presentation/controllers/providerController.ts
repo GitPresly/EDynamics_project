@@ -2,8 +2,7 @@ import { Router, Request, Response } from 'express';
 import { IProvider } from '../../domain/providers/IProvider';
 import { EasyGiftsProvider } from '../../infrastructure/providers/EasyGiftsProvider';
 import { HttpClient } from '../../infrastructure/http/httpClient';
-import { ProviderFileRepository } from '../../infrastructure/providers/fileSystem/ProviderFileRepository';
-import { ProductFileRepository } from '../../infrastructure/providers/fileSystem/ProductFileRepository';
+import { createProductRepository, createProviderRepository } from '../../infrastructure/repositories/repositoryFactory';
 import { SyncProviderUseCase } from '../../application/usecases/Provider/SyncProviderUseCase';
 import { ProcessProductsUseCase } from '../../application/usecases/Provider/ProcessProductsUseCase';
 import { NormalizeProductsUseCase } from '../../application/usecases/Provider/NormalizeProductsUseCase';
@@ -16,8 +15,8 @@ const router = Router();
 
 // Initialize dependencies (dependency injection)
 const httpClient = new HttpClient();
-const providerRepository = new ProviderFileRepository();
-const productRepository = new ProductFileRepository();
+const providerRepository = createProviderRepository();
+const productRepository = createProductRepository();
 const processProductsUseCase = new ProcessProductsUseCase(productRepository);
 const normalizeProductsUseCase = new NormalizeProductsUseCase(productRepository);
 const getProvidersUseCase = new GetProvidersUseCase(providerRepository, productRepository);

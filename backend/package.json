@@ -4,14 +4,17 @@
   "description": "Backend server with Clean Architecture",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx watch src/infrastructure/web/server.ts",
+    "dev": "tsx watch --exclude \"./data/**\" src/infrastructure/web/server.ts",
     "build": "tsc",
-    "start": "node dist/infrastructure/web/server.js"
+    "start": "node dist/infrastructure/web/server.js",
+    "migration:create": "tsx src/infrastructure/database/createMigration.ts",
+    "migrate": "tsx src/infrastructure/database/runMigrations.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "mysql2": "^3.16.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

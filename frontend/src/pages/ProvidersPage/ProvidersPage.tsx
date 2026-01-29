@@ -53,7 +53,7 @@ export const ProvidersPage: React.FC = () => {
           type: 'fetch',
           message: response.success
             ? `Successfully fetched ${response.processedCount} products`
-            : `Fetched with ${response.errors.length} error(s)`,
+            : `Fetched with ${response.errors.length} error(s):\n${(response.errors || []).join('\n')}`,
           isSuccess: response.success,
           isLoading: false,
         },
@@ -94,7 +94,7 @@ export const ProvidersPage: React.FC = () => {
           type: 'normalize',
           message: response.success
             ? `Successfully normalized ${response.processedCount} products`
-            : `Normalized with ${response.errors.length} error(s)`,
+            : `Normalized with ${response.errors.length} error(s):\n${(response.errors || []).join('\n')}`,
           isSuccess: response.success,
           isLoading: false,
         },
