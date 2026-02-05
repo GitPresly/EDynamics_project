@@ -10,7 +10,9 @@ export interface NormalizedProductMetadata {
 
 export interface NormalizedProduct {
   id: string;
-  name: string;
+  /** Set when loading from API/repository (e.g. for list/edit). */
+  providerId?: string;
+  name?: string;
   price?: number;
   description?: string;
   imageUrl?: string;
@@ -23,5 +25,4 @@ export interface NormalizedProduct {
   normalizedDescription?: string;
   normalizedCategory?: string;
   metadata?: NormalizedProductMetadata;
-
 }

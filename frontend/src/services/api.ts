@@ -8,8 +8,18 @@ import type { UpdateSubmissionResponse } from '../presentation/responses/Submiss
 import type { GetProvidersResponse, ProviderInfo } from '../presentation/responses/Provider/GetProvidersResponse';
 import type { SyncProviderResponse } from '../presentation/responses/Provider/SyncProviderResponse';
 import type { NormalizeProductsResponse } from '../presentation/responses/Provider/NormalizeProductsResponse';
+import type { Product } from '../domain/entities/Product/Product';
+import type { User } from '../domain/entities/User/User';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const TOKEN_KEY = 'product_optimizer_token';
+
+function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem(TOKEN_KEY);
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
+}
 
 class ApiService {
   private async request<T>(
@@ -19,8 +29,8 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
-          'Content-Type': 'application/json',
-          ...options?.headers,
+          ...getAuthHeaders(),
+          ...(options?.headers as Record<string, string>),
         },
         ...options,
       });
@@ -119,6 +129,68 @@ class ApiService {
     }) as NormalizeProductsResponse;
 
     return response;
+  }
+
+  // Product methods
+  async getProducts(params?: { category?: string; name?: string; catalogNumber?: string; providerId?: string }): Promise<Product[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.category?.trim()) searchParams.set('category', params.category.trim());
+    if (params?.name?.trim()) searchParams.set('name', params.name.trim());
+    if (params?.catalogNumber?.trim()) searchParams.set('catalogNumber', params.catalogNumber.trim());
+    if (params?.providerId?.trim()) searchParams.set('providerId', params.providerId.trim());
+    const query = searchParams.toString();
+    const url = query ? `/products?${query}` : '/products';
+    const response = (await this.request<{ products: Product[] }>(url, { method: 'GET' })) as unknown as { products: Product[] };
+    return response.products ?? [];
+  }
+
+  async getProduct(providerId: string, id: string): Promise<Product> {
+    const product = await this.request<Product>(
+      `/products/${encodeURIComponent(providerId)}/${encodeURIComponent(id)}`,
+      { method: 'GET' }
+    ) as unknown as Product;
+    return { ...product, providerId };
+  }
+
+  async updateProduct(
+    providerId: string,
+    id: string,
+    data: Partial<Pick<Product, 'name' | 'price' | 'description' | 'imageUrl' | 'category' | 'sku' | 'stock' | 'normalizedName' | 'normalizedDescription' | 'normalizedCategory'>>
+  ): Promise<Product> {
+    const product = await this.request<Product>(
+      `/products/${encodeURIComponent(providerId)}/${encodeURIComponent(id)}`,
+      { method: 'PUT', body: JSON.stringify(data) }
+    ) as unknown as Product;
+    return { ...product, providerId };
+  }
+
+  // Users (admin only)
+  async getUsers(): Promise<User[]> {
+    const response = (await this.request<User[]>('/users', { method: 'GET' })) as unknown as { data: User[] };
+    return response.data ?? [];
+  }
+
+  async createUser(data: { email: string; password: string; name: string; role: User['role'] }): Promise<User> {
+    const response = (await this.request<User>('/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })) as unknown as { data: User };
+    if (!response.data) throw new Error('No data received');
+    return response.data;
+  }
+
+  async updateProfile(data: {
+    name?: string;
+    email?: string;
+    currentPassword?: string;
+    newPassword?: string;
+  }): Promise<User> {
+    const response = (await this.request<User>('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })) as unknown as { data: User };
+    if (!response.data) throw new Error('No data received');
+    return response.data;
   }
 }
 

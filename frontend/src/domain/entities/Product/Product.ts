@@ -10,7 +10,11 @@ export interface Product {
   provider?: string;
   /** Provider key (e.g. easygifts) for API; set when listing/getting from API */
   providerId?: string;
-  providerData?: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
+  providerData?: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+  /** Normalized fields from product_normalized (edit/save) */
+  normalizedName?: string;
+  normalizedDescription?: string;
+  normalizedCategory?: string;
 }

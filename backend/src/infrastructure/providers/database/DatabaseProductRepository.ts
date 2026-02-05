@@ -1,5 +1,6 @@
 import { databaseClient } from '../../database/databaseClient';
 import { Product } from '../../../domain/entities/Product/Product';
+import { NormalizedProduct } from '../../../domain/entities/NormalizedProduct/NormalizedProduct';
 import { ProductEntity } from '../../../domain/entities/Product/ProductEntity';
 import { IProductRepository } from '../interfaces/IProductRepository';
 
@@ -169,6 +170,7 @@ export class DatabaseProductRepository implements IProductRepository {
       sku: row.sku ?? undefined,
       stock: row.stock !== null && row.stock !== undefined ? Number(row.stock) : undefined,
       provider: row.provider ?? undefined,
+      providerId: row.providerId ?? undefined,
       providerData: parseJsonColumn(row.providerData),
       createdAt: toISOString(row.createdAt),
       updatedAt: toISOString(row.updatedAt),
@@ -192,25 +194,77 @@ export class DatabaseProductRepository implements IProductRepository {
     id: string,
     normalizedData: any,
   ): Promise<void> {
-    await databaseClient.query(
+    const meta = normalizedData.metadata != null ? JSON.stringify(normalizedData.metadata) : null;
+    const pool = databaseClient.getPool();
+    await pool.execute(
       `
       INSERT INTO ${this.normalizedTable} (
         provider_id,
         product_id,
-        normalized_data
+        name,
+        price,
+        description,
+        image_url,
+        category,
+        sku,
+        stock,
+        provider,
+        normalized_name,
+        normalized_description,
+        normalized_category,
+        metadata
       )
-      VALUES (?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
-        normalized_data = VALUES(normalized_data)
+        name = VALUES(name),
+        price = VALUES(price),
+        description = VALUES(description),
+        image_url = VALUES(image_url),
+        category = VALUES(category),
+        sku = VALUES(sku),
+        stock = VALUES(stock),
+        provider = VALUES(provider),
+        normalized_name = VALUES(normalized_name),
+        normalized_description = VALUES(normalized_description),
+        normalized_category = VALUES(normalized_category),
+        metadata = VALUES(metadata)
       `,
-      [providerId, id, JSON.stringify(normalizedData)],
+      [
+        providerId,
+        id,
+        normalizedData.name ?? null,
+        normalizedData.price ?? null,
+        normalizedData.description ?? null,
+        normalizedData.imageUrl ?? null,
+        normalizedData.category ?? null,
+        normalizedData.sku ?? null,
+        normalizedData.stock ?? null,
+        normalizedData.provider ?? null,
+        normalizedData.normalizedName ?? null,
+        normalizedData.normalizedDescription ?? null,
+        normalizedData.normalizedCategory ?? null,
+        meta,
+      ],
     );
   }
 
-  async findNormalized(providerId: string, id: string): Promise<any | null> {
+  async findNormalized(providerId: string, id: string): Promise<NormalizedProduct | null> {
     const rows = await databaseClient.query<any>(
       `
-      SELECT normalized_data AS normalizedData
+      SELECT
+        product_id AS productId,
+        name,
+        price,
+        description,
+        image_url AS imageUrl,
+        category,
+        sku,
+        stock,
+        provider,
+        normalized_name AS normalizedName,
+        normalized_description AS normalizedDescription,
+        normalized_category AS normalizedCategory,
+        metadata
       FROM ${this.normalizedTable}
       WHERE provider_id = ? AND product_id = ?
       LIMIT 1
@@ -223,7 +277,72 @@ export class DatabaseProductRepository implements IProductRepository {
     }
 
     const row = rows[0];
-    return parseJsonColumn(row.normalizedData) ?? null;
+    return {
+      id: row.productId,
+      providerId,
+      name: row.name ?? undefined,
+      price: row.price != null ? Number(row.price) : undefined,
+      description: row.description ?? undefined,
+      imageUrl: row.imageUrl ?? undefined,
+      category: row.category ?? undefined,
+      sku: row.sku ?? undefined,
+      stock: row.stock != null ? Number(row.stock) : undefined,
+      provider: row.provider ?? undefined,
+      normalizedName: row.normalizedName ?? undefined,
+      normalizedDescription: row.normalizedDescription ?? undefined,
+      normalizedCategory: row.normalizedCategory ?? undefined,
+      metadata: parseJsonColumn(row.metadata) ?? undefined,
+    };
+  }
+
+  async findAllNormalized(providerId?: string): Promise<NormalizedProduct[]> {
+    const params: any[] = [];
+    const whereClause = providerId ? 'WHERE provider_id = ?' : '';
+
+    if (providerId) {
+      params.push(providerId);
+    }
+
+    const rows = await databaseClient.query<any>(
+      `
+      SELECT
+        product_id AS productId,
+        provider_id AS providerId,
+        name,
+        price,
+        description,
+        image_url AS imageUrl,
+        category,
+        sku,
+        stock,
+        provider,
+        normalized_name AS normalizedName,
+        normalized_description AS normalizedDescription,
+        normalized_category AS normalizedCategory,
+        metadata
+      FROM ${this.normalizedTable}
+      ${whereClause}
+      ORDER BY COALESCE(normalized_name, name) ASC
+      `,
+      params,
+    );
+
+    return rows.map((row) => ({
+      id: row.productId,
+      providerId: row.providerId,
+      name: row.name ?? undefined,
+      price: row.price != null ? Number(row.price) : undefined,
+      description: row.description ?? undefined,
+      imageUrl: row.imageUrl ?? undefined,
+      category: row.category ?? undefined,
+      sku: row.sku ?? undefined,
+      stock: row.stock != null ? Number(row.stock) : undefined,
+      provider: row.provider ?? undefined,
+      normalizedName: row.normalizedName ?? undefined,
+      normalizedDescription: row.normalizedDescription ?? undefined,
+      normalizedCategory: row.normalizedCategory ?? undefined,
+      metadata: parseJsonColumn(row.metadata) ?? undefined,
+    }));
   }
 
   async findAllWithNormalized(
@@ -253,7 +372,7 @@ export class DatabaseProductRepository implements IProductRepository {
         p.provider_data AS providerData,
         p.created_at AS createdAt,
         p.updated_at AS updatedAt,
-        n.normalized_data AS normalizedData
+        n.id AS normalizedId
       FROM ${this.productsTable} p
       LEFT JOIN ${this.normalizedTable} n
         ON n.provider_id = p.provider_id
@@ -279,7 +398,7 @@ export class DatabaseProductRepository implements IProductRepository {
         createdAt: toISOString(row.createdAt),
         updatedAt: toISOString(row.updatedAt),
       },
-      hasNormalized: row.normalizedData !== null && row.normalizedData !== undefined,
+      hasNormalized: row.normalizedId != null,
     }));
   }
 }

@@ -1,8 +1,12 @@
 import 'dotenv/config';
 import express, { Express } from 'express';
 import cors from 'cors';
+import { authRouter } from '../../presentation/controllers/authController';
 import { formRouter } from '../../presentation/controllers/formController';
 import { providerRouter } from '../../presentation/controllers/providerController';
+import { productRouter } from '../../presentation/controllers/productController';
+import { userRouter } from '../../presentation/controllers/userController';
+import { authMiddleware } from './authMiddleware';
 
 const PORT = process.env.PORT || 3001;
 
@@ -30,6 +34,9 @@ export function createServer(): Express {
         providers: 'GET /api/providers',
         syncProvider: 'POST /api/providers/:provider/sync',
         normalize: 'POST /api/providers/:provider/normalize',
+        products: 'GET /api/products',
+        product: 'GET /api/products/:providerId/:id',
+        updateProduct: 'PUT /api/products/:providerId/:id',
       },
     });
   });
@@ -39,18 +46,30 @@ export function createServer(): Express {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // API routes
-  app.use('/api', formRouter);
-  app.use('/api', providerRouter);
+  // Auth (public)
+  app.use('/api', authRouter);
+
+  // Protected API routes (require login)
+  app.use('/api', authMiddleware, formRouter);
+  app.use('/api', authMiddleware, providerRouter);
+  app.use('/api', authMiddleware, productRouter);
+  app.use('/api', userRouter);
 
   // Log all registered routes for debugging
   console.log('📋 Registered API routes:');
-  console.log('  POST /api/submit');
-  console.log('  GET /api/submissions');
-  console.log('  PUT /api/submissions/:id');
-  console.log('  GET /api/providers');
-  console.log('  POST /api/providers/:provider/sync');
-  console.log('  POST /api/providers/:provider/normalize');
+  console.log('  POST /api/auth/login');
+  console.log('  GET /api/auth/me (auth required)');
+  console.log('  POST /api/submit (auth required)');
+  console.log('  GET /api/submissions (auth required)');
+  console.log('  PUT /api/submissions/:id (auth required)');
+  console.log('  GET /api/providers (auth required)');
+  console.log('  POST /api/providers/:provider/sync (auth required)');
+  console.log('  POST /api/providers/:provider/normalize (auth required)');
+  console.log('  GET /api/products (auth required)');
+  console.log('  GET /api/products/:providerId/:id (auth required)');
+  console.log('  PUT /api/products/:providerId/:id (auth required)');
+  console.log('  GET /api/users (admin only)');
+  console.log('  POST /api/users (admin only)');
 
   return app;
 }

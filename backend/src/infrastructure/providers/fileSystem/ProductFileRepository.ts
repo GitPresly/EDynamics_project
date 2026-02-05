@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { Product } from '../../../domain/entities/Product/Product';
+import { NormalizedProduct } from '../../../domain/entities/NormalizedProduct/NormalizedProduct';
 import { ProductEntity } from '../../../domain/entities/Product/ProductEntity';
 import { IProductRepository } from '../interfaces/IProductRepository';
 
@@ -187,19 +188,115 @@ export class ProductFileRepository implements IProductRepository {
     );
   }
 
-  async findNormalized(providerId: string, id: string): Promise<any | null> {
+  async findNormalized(providerId: string, id: string): Promise<NormalizedProduct | null> {
     await this.ensureProviderProductsDirectory(providerId);
 
     const normalizedPath = this.getNormalizedPath(providerId, id);
 
     try {
       const data = await fs.readFile(normalizedPath, 'utf-8');
-      return JSON.parse(data);
+      const raw = JSON.parse(data) as Record<string, unknown>;
+      return {
+        id,
+        providerId,
+        name: raw.name as string | undefined,
+        price: typeof raw.price === 'number' ? raw.price : undefined,
+        description: raw.description as string | undefined,
+        imageUrl: raw.imageUrl as string | undefined,
+        category: raw.category as string | undefined,
+        sku: raw.sku as string | undefined,
+        stock: typeof raw.stock === 'number' ? raw.stock : undefined,
+        provider: raw.provider as string | undefined,
+        normalizedName: raw.normalizedName as string | undefined,
+        normalizedDescription: raw.normalizedDescription as string | undefined,
+        normalizedCategory: raw.normalizedCategory as string | undefined,
+        metadata: raw.metadata as NormalizedProduct['metadata'],
+      };
     } catch (error) {
       if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
         return null;
       }
       throw new Error(`Failed to read normalized product: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async findAllNormalized(providerId?: string): Promise<NormalizedProduct[]> {
+    const baseDir = getBaseProvidersDirectory();
+    const results: NormalizedProduct[] = [];
+
+    try {
+      if (providerId) {
+        const productsDir = getProviderProductsDirectory(providerId);
+        await this.ensureProviderProductsDirectory(providerId);
+        const productDirs = await fs.readdir(productsDir, { withFileTypes: true });
+
+        for (const dir of productDirs) {
+          if (!dir.isDirectory()) continue;
+          const normalizedPath = path.join(productsDir, dir.name, 'normalized.json');
+          try {
+            const data = await fs.readFile(normalizedPath, 'utf-8');
+            const raw = JSON.parse(data) as Record<string, unknown>;
+            results.push({
+              id: dir.name,
+              providerId,
+              name: raw.name as string | undefined,
+              price: typeof raw.price === 'number' ? raw.price : undefined,
+              description: raw.description as string | undefined,
+              imageUrl: raw.imageUrl as string | undefined,
+              category: raw.category as string | undefined,
+              sku: raw.sku as string | undefined,
+              stock: typeof raw.stock === 'number' ? raw.stock : undefined,
+              provider: raw.provider as string | undefined,
+              normalizedName: raw.normalizedName as string | undefined,
+              normalizedDescription: raw.normalizedDescription as string | undefined,
+              normalizedCategory: raw.normalizedCategory as string | undefined,
+              metadata: raw.metadata as NormalizedProduct['metadata'],
+            });
+          } catch {
+            // Skip if normalized.json missing or invalid
+          }
+        }
+      } else {
+        const providerDirs = await fs.readdir(baseDir, { withFileTypes: true });
+        for (const providerDir of providerDirs) {
+          if (!providerDir.isDirectory()) continue;
+          const productsDir = path.join(baseDir, providerDir.name, 'products');
+          try {
+            const productDirs = await fs.readdir(productsDir, { withFileTypes: true });
+            for (const dir of productDirs) {
+              if (!dir.isDirectory()) continue;
+              const normalizedPath = path.join(productsDir, dir.name, 'normalized.json');
+              try {
+                const data = await fs.readFile(normalizedPath, 'utf-8');
+                const raw = JSON.parse(data) as Record<string, unknown>;
+                results.push({
+                  id: dir.name,
+                  providerId: providerDir.name,
+                  name: raw.name as string | undefined,
+                  price: typeof raw.price === 'number' ? raw.price : undefined,
+                  description: raw.description as string | undefined,
+                  imageUrl: raw.imageUrl as string | undefined,
+                  category: raw.category as string | undefined,
+                  sku: raw.sku as string | undefined,
+                  stock: typeof raw.stock === 'number' ? raw.stock : undefined,
+                  provider: raw.provider as string | undefined,
+                  normalizedName: raw.normalizedName as string | undefined,
+                  normalizedDescription: raw.normalizedDescription as string | undefined,
+                  normalizedCategory: raw.normalizedCategory as string | undefined,
+                  metadata: raw.metadata as NormalizedProduct['metadata'],
+                });
+              } catch {
+                // Skip
+              }
+            }
+          } catch {
+            continue;
+          }
+        }
+      }
+      return results;
+    } catch (error) {
+      throw new Error(`Failed to list normalized products: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

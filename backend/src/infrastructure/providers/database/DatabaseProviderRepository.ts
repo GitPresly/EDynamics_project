@@ -86,10 +86,19 @@ export class DatabaseProviderRepository implements IProviderRepository {
         ? row.timestamp.toISOString()
         : new Date(row.timestamp).toISOString();
 
+    const products =
+      row.products == null
+        ? []
+        : typeof row.products === 'string'
+          ? JSON.parse(row.products)
+          : Array.isArray(row.products)
+            ? row.products
+            : [];
+
     return {
       timestamp,
       provider: row.provider,
-      products: row.products ? JSON.parse(row.products) : [],
+      products,
     };
   }
 
