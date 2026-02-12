@@ -24,9 +24,11 @@ export const ProductEditPage: React.FC = () => {
     normalizedName: '',
     normalizedDescription: '',
     normalizedCategory: '',
+    events: '',
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -60,6 +62,7 @@ export const ProductEditPage: React.FC = () => {
           normalizedName: p.normalizedName ?? '',
           normalizedDescription: p.normalizedDescription ?? '',
           normalizedCategory: p.normalizedCategory ?? '',
+          events: p.events ?? '',
         });
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Error loading'))
@@ -76,13 +79,32 @@ export const ProductEditPage: React.FC = () => {
     window.location.hash = '#products';
   };
 
+  const handleEnhance = async () => {
+    if (!params?.providerId || !params?.id) return;
+    setIsEnhancing(true);
+    setSaveMessage(null);
+    try {
+      const enhanced = await apiService.enhanceProduct(params.providerId, params.id);
+      setProduct(enhanced);
+      setForm((prev) => ({ ...prev, events: enhanced.events ?? '' }));
+      setSaveMessage({ type: 'success', text: 'Events generated. Review and click Save to store them.' });
+    } catch (err) {
+      setSaveMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Enhance failed',
+      });
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!params?.providerId || !params?.id) return;
     setIsSaving(true);
     setSaveMessage(null);
     try {
-      await apiService.updateProduct(params.providerId, params.id, {
+      const updated = await apiService.updateProduct(params.providerId, params.id, {
         name: form.name.trim() || undefined,
         price: form.price.trim() ? Number(form.price) : undefined,
         description: form.description.trim() || undefined,
@@ -93,9 +115,10 @@ export const ProductEditPage: React.FC = () => {
         normalizedName: form.normalizedName.trim() || undefined,
         normalizedDescription: form.normalizedDescription.trim() || undefined,
         normalizedCategory: form.normalizedCategory.trim() || undefined,
+        events: form.events.trim() || undefined,
       });
       setSaveMessage({ type: 'success', text: 'Product saved successfully.' });
-      setProduct((prev) => prev ? { ...prev, ...form } : null);
+      setProduct(updated);
     } catch (err) {
       setSaveMessage({
         type: 'error',
@@ -256,6 +279,27 @@ export const ProductEditPage: React.FC = () => {
             rows={4}
             className="product-edit-input product-edit-textarea"
           />
+        </div>
+
+        <div className="product-edit-field product-edit-enhance-row">
+          <label>Events (merchant gift use)</label>
+          <textarea
+            id="events"
+            name="events"
+            value={form.events}
+            onChange={handleChange}
+            rows={5}
+            placeholder="Use “Enhance product” to generate 5 events with AI."
+            className="product-edit-input product-edit-textarea"
+          />
+          <button
+            type="button"
+            onClick={handleEnhance}
+            disabled={isEnhancing}
+            className="product-edit-enhance-btn"
+          >
+            {isEnhancing ? 'Enhancing…' : 'Enhance product'}
+          </button>
         </div>
 
         {saveMessage && (

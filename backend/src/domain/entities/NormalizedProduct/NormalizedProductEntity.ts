@@ -15,6 +15,7 @@ export class NormalizedProductEntity {
     public readonly normalizedDescription: string | undefined,
     public readonly normalizedCategory: string | undefined,
     public readonly metadata: NormalizedProductMetadata | undefined,
+    public readonly events: string | undefined,
   ) { }
 
   static create(data: Partial<NormalizedProduct> & { id: string; name: string }): NormalizedProductEntity {
@@ -59,6 +60,7 @@ export class NormalizedProductEntity {
       data.normalizedDescription?.trim(),
       data.normalizedCategory?.trim(),
       data.metadata,
+      data.events?.trim(),
     );
   }
 
@@ -77,6 +79,7 @@ export class NormalizedProductEntity {
       data.normalizedDescription,
       data.normalizedCategory,
       data.metadata,
+      data.events,
     );
   }
 
@@ -95,6 +98,7 @@ export class NormalizedProductEntity {
       normalizedDescription: this.normalizedDescription,
       normalizedCategory: this.normalizedCategory,
       metadata: this.metadata,
+      events: this.events,
     };
   }
 
@@ -134,6 +138,7 @@ export class NormalizedProductEntity {
       data.normalizedDescription ?? this.normalizedDescription,
       data.normalizedCategory ?? this.normalizedCategory,
       updatedMetadata,
+      data.events ?? this.events,
     );
   }
 }

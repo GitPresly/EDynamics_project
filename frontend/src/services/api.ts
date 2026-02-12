@@ -155,11 +155,20 @@ class ApiService {
   async updateProduct(
     providerId: string,
     id: string,
-    data: Partial<Pick<Product, 'name' | 'price' | 'description' | 'imageUrl' | 'category' | 'sku' | 'stock' | 'normalizedName' | 'normalizedDescription' | 'normalizedCategory'>>
+    data: Partial<Pick<Product, 'name' | 'price' | 'description' | 'imageUrl' | 'category' | 'sku' | 'stock' | 'normalizedName' | 'normalizedDescription' | 'normalizedCategory' | 'events'>>
   ): Promise<Product> {
     const product = await this.request<Product>(
       `/products/${encodeURIComponent(providerId)}/${encodeURIComponent(id)}`,
       { method: 'PUT', body: JSON.stringify(data) }
+    ) as unknown as Product;
+    return { ...product, providerId };
+  }
+
+  /** Call AI to generate "5 events for merchant gift". Returns enhanced data only; does not save. */
+  async enhanceProduct(providerId: string, id: string): Promise<Product> {
+    const product = await this.request<Product>(
+      `/products/${encodeURIComponent(providerId)}/${encodeURIComponent(id)}/enhance`,
+      { method: 'POST' }
     ) as unknown as Product;
     return { ...product, providerId };
   }

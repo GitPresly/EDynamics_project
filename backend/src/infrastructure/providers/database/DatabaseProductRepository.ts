@@ -212,9 +212,10 @@ export class DatabaseProductRepository implements IProductRepository {
         normalized_name,
         normalized_description,
         normalized_category,
-        metadata
+        metadata,
+        events
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         name = VALUES(name),
         price = VALUES(price),
@@ -227,7 +228,8 @@ export class DatabaseProductRepository implements IProductRepository {
         normalized_name = VALUES(normalized_name),
         normalized_description = VALUES(normalized_description),
         normalized_category = VALUES(normalized_category),
-        metadata = VALUES(metadata)
+        metadata = VALUES(metadata),
+        events = VALUES(events)
       `,
       [
         providerId,
@@ -244,6 +246,7 @@ export class DatabaseProductRepository implements IProductRepository {
         normalizedData.normalizedDescription ?? null,
         normalizedData.normalizedCategory ?? null,
         meta,
+        normalizedData.events ?? null,
       ],
     );
   }
@@ -264,7 +267,8 @@ export class DatabaseProductRepository implements IProductRepository {
         normalized_name AS normalizedName,
         normalized_description AS normalizedDescription,
         normalized_category AS normalizedCategory,
-        metadata
+        metadata,
+        events
       FROM ${this.normalizedTable}
       WHERE provider_id = ? AND product_id = ?
       LIMIT 1
@@ -292,6 +296,7 @@ export class DatabaseProductRepository implements IProductRepository {
       normalizedDescription: row.normalizedDescription ?? undefined,
       normalizedCategory: row.normalizedCategory ?? undefined,
       metadata: parseJsonColumn(row.metadata) ?? undefined,
+      events: row.events ?? undefined,
     };
   }
 
@@ -319,7 +324,8 @@ export class DatabaseProductRepository implements IProductRepository {
         normalized_name AS normalizedName,
         normalized_description AS normalizedDescription,
         normalized_category AS normalizedCategory,
-        metadata
+        metadata,
+        events
       FROM ${this.normalizedTable}
       ${whereClause}
       ORDER BY COALESCE(normalized_name, name) ASC
@@ -342,6 +348,7 @@ export class DatabaseProductRepository implements IProductRepository {
       normalizedDescription: row.normalizedDescription ?? undefined,
       normalizedCategory: row.normalizedCategory ?? undefined,
       metadata: parseJsonColumn(row.metadata) ?? undefined,
+      events: row.events ?? undefined,
     }));
   }
 

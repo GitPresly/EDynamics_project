@@ -37,6 +37,7 @@ export function createServer(): Express {
         products: 'GET /api/products',
         product: 'GET /api/products/:providerId/:id',
         updateProduct: 'PUT /api/products/:providerId/:id',
+        enhanceProduct: 'POST /api/products/:providerId/:id/enhance',
       },
     });
   });
@@ -68,6 +69,7 @@ export function createServer(): Express {
   console.log('  GET /api/products (auth required)');
   console.log('  GET /api/products/:providerId/:id (auth required)');
   console.log('  PUT /api/products/:providerId/:id (auth required)');
+  console.log('  POST /api/products/:providerId/:id/enhance (auth required)');
   console.log('  GET /api/users (admin only)');
   console.log('  POST /api/users (admin only)');
 

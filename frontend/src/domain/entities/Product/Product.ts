@@ -17,4 +17,6 @@ export interface Product {
   normalizedName?: string;
   normalizedDescription?: string;
   normalizedCategory?: string;
+  /** AI-generated: events where this product can be used as merchant gift */
+  events?: string;
 }

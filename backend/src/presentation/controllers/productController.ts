@@ -1,8 +1,12 @@
 import { Request, Response, Router } from 'express';
 import { createProductRepository } from '../../infrastructure/repositories/repositoryFactory';
+import { createChatCompletionClient } from '../../infrastructure/ai/aiClientFactory';
+import { EnhanceProductUseCase } from '../../application/usecases/Product/EnhanceProductUseCase';
 
 const router = Router();
 const productRepository = createProductRepository();
+const chatClient = createChatCompletionClient();
+const enhanceProductUseCase = new EnhanceProductUseCase(productRepository, chatClient);
 
 function matchesFilter(value: string | undefined, filter: string | undefined): boolean {
   if (!filter || filter.trim() === '') return true;
@@ -55,6 +59,7 @@ router.get('/products', async (req: Request, res: Response) => {
       normalizedName: p.normalizedName,
       normalizedDescription: p.normalizedDescription,
       normalizedCategory: p.normalizedCategory,
+      events: p.events,
     }));
     res.json({ products });
   } catch (error) {
@@ -119,6 +124,7 @@ router.put('/products/:providerId/:id', async (req: Request, res: Response) => {
       normalizedDescription: body.normalizedDescription !== undefined ? body.normalizedDescription : existing.normalizedDescription,
       normalizedCategory: body.normalizedCategory !== undefined ? body.normalizedCategory : existing.normalizedCategory,
       metadata: body.metadata !== undefined ? body.metadata : existing.metadata,
+      events: body.events !== undefined ? body.events : existing.events,
     };
 
     await productRepository.saveNormalized(providerId, id, merged);
@@ -128,6 +134,41 @@ router.put('/products/:providerId/:id', async (req: Request, res: Response) => {
     console.error('Error updating product:', error);
     res.status(500).json({
       error: 'Failed to update product',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * POST /products/:providerId/:id/enhance
+ * Calls AI to generate "5 events for merchant gift". Returns data only; does not save. User saves via PUT.
+ */
+router.post('/products/:providerId/:id/enhance', async (req: Request, res: Response) => {
+  try {
+    const providerId = (req.params.providerId ?? '').trim();
+    const id = (req.params.id ?? '').trim();
+    if (!providerId || !id) {
+      return res.status(400).json({ error: 'providerId and id are required' });
+    }
+
+    const result = await enhanceProductUseCase.execute({ providerId, productId: id });
+    res.json({
+      ...result.product,
+      providerId,
+      events: result.events,
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('Product not found')) {
+        return res.status(404).json({ error: error.message });
+      }
+      if (error.message.includes('DEEP_INFRA_KEY')) {
+        return res.status(503).json({ error: error.message });
+      }
+    }
+    console.error('Error enhancing product:', error);
+    res.status(500).json({
+      error: 'Failed to enhance product',
       message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
