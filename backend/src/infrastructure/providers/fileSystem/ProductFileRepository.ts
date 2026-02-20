@@ -3,6 +3,7 @@ import path from 'path';
 import { Product } from '../../../domain/entities/Product/Product';
 import { NormalizedProduct } from '../../../domain/entities/NormalizedProduct/NormalizedProduct';
 import { ProductEntity } from '../../../domain/entities/Product/ProductEntity';
+import type { AiStatus, ProductAiStatusRow } from '../interfaces/IProductRepository';
 import { IProductRepository } from '../interfaces/IProductRepository';
 
 const getBaseProvidersDirectory = (): string => {
@@ -384,5 +385,31 @@ export class ProductFileRepository implements IProductRepository {
     } catch (error) {
       throw new Error(`Failed to read products directory: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  async findByAiStatus(
+    _status: AiStatus,
+    _providerId?: string,
+    _limit?: number,
+  ): Promise<ProductAiStatusRow[]> {
+    // File storage has no ai_status; pipeline jobs require database.
+    return [];
+  }
+
+  async updateAiStatus(
+    _providerId: string,
+    _productId: string,
+    _status: AiStatus,
+    _aiError?: string | null,
+  ): Promise<void> {
+    // No-op for file storage.
+  }
+
+  async setAiStatusByProvider(_providerId: string, _status: AiStatus): Promise<number> {
+    return 0;
+  }
+
+  async resetFailedAiStatus(_providerId?: string): Promise<number> {
+    return 0;
   }
 }

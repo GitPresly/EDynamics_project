@@ -201,6 +201,81 @@ class ApiService {
     if (!response.data) throw new Error('No data received');
     return response.data;
   }
+
+  // Pipeline jobs (admin only)
+  async getJobs(params?: { job_name?: string; status?: string; limit?: number }): Promise<PipelineRun[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.job_name) searchParams.set('job_name', params.job_name);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.limit != null) searchParams.set('limit', String(params.limit));
+    const query = searchParams.toString();
+    const url = query ? `/admin/jobs?${query}` : '/admin/jobs';
+    const response = (await this.request<PipelineRun[]>(url, { method: 'GET' })) as unknown as { data: PipelineRun[] };
+    return response.data ?? [];
+  }
+
+  async getJobById(id: number): Promise<PipelineRun> {
+    const response = (await this.request<PipelineRun>(`/admin/jobs/${id}`, { method: 'GET' })) as unknown as { data: PipelineRun };
+    if (!response.data) throw new Error('No data received');
+    return response.data;
+  }
+
+  async triggerImportJob(providerId?: string): Promise<JobTriggerResponse> {
+    return this.request<JobTriggerResponse>('/admin/jobs/import', {
+      method: 'POST',
+      body: JSON.stringify(providerId != null ? { providerId } : {}),
+    }) as Promise<JobTriggerResponse>;
+  }
+
+  async triggerEnrichJob(options?: { providerId?: string; batchSize?: number }): Promise<JobTriggerResponse> {
+    return this.request<JobTriggerResponse>('/admin/jobs/enrich', {
+      method: 'POST',
+      body: JSON.stringify(options ?? {}),
+    }) as Promise<JobTriggerResponse>;
+  }
+
+  async getFailedProducts(providerId?: string): Promise<FailedProductRow[]> {
+    const url = providerId ? `/admin/jobs/failed-products?provider_id=${encodeURIComponent(providerId)}` : '/admin/jobs/failed-products';
+    const response = (await this.request<FailedProductRow[]>(url, { method: 'GET' })) as unknown as { data: FailedProductRow[] };
+    return response.data ?? [];
+  }
+
+  async retryFailedProducts(providerId?: string): Promise<{ resetCount: number }> {
+    const response = (await this.request<{ resetCount: number }>('/admin/jobs/retry-failed', {
+      method: 'POST',
+      body: JSON.stringify(providerId != null ? { providerId } : {}),
+    })) as unknown as { resetCount: number };
+    return { resetCount: response.resetCount ?? 0 };
+  }
+}
+
+export interface PipelineRun {
+  id: number;
+  jobName: string;
+  providerId: string | null;
+  status: string;
+  startedAt: string;
+  finishedAt: string | null;
+  processedCount: number;
+  successCount: number;
+  failedCount: number;
+  error: string | null;
+  metadata: Record<string, unknown> | null;
+}
+
+export interface JobTriggerResponse {
+  success: boolean;
+  runId: number;
+  status: 'success' | 'failed';
+  processedCount: number;
+  successCount: number;
+  failedCount: number;
+  error?: string;
+}
+
+export interface FailedProductRow {
+  id: string;
+  providerId: string;
 }
 
 export const apiService = new ApiService();

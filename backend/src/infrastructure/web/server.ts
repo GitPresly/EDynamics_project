@@ -6,7 +6,9 @@ import { formRouter } from '../../presentation/controllers/formController';
 import { providerRouter } from '../../presentation/controllers/providerController';
 import { productRouter } from '../../presentation/controllers/productController';
 import { userRouter } from '../../presentation/controllers/userController';
-import { authMiddleware } from './authMiddleware';
+import { jobRouter } from '../../presentation/controllers/jobController';
+import { authMiddleware, requireRole } from './authMiddleware';
+import { startScheduler } from '../jobs/scheduler';
 
 const PORT = process.env.PORT || 3001;
 
@@ -55,6 +57,7 @@ export function createServer(): Express {
   app.use('/api', authMiddleware, providerRouter);
   app.use('/api', authMiddleware, productRouter);
   app.use('/api', userRouter);
+  app.use('/api/admin/jobs', authMiddleware, requireRole('administrator'), jobRouter);
 
   // Log all registered routes for debugging
   console.log('📋 Registered API routes:');
@@ -72,6 +75,12 @@ export function createServer(): Express {
   console.log('  POST /api/products/:providerId/:id/enhance (auth required)');
   console.log('  GET /api/users (admin only)');
   console.log('  POST /api/users (admin only)');
+  console.log('  POST /api/admin/jobs/import (admin only)');
+  console.log('  POST /api/admin/jobs/enrich (admin only)');
+  console.log('  GET /api/admin/jobs (admin only)');
+  console.log('  GET /api/admin/jobs/:id (admin only)');
+  console.log('  GET /api/admin/jobs/failed-products (admin only)');
+  console.log('  POST /api/admin/jobs/retry-failed (admin only)');
 
   return app;
 }
@@ -82,6 +91,7 @@ export function startServer(): void {
   const server = app.listen(PORT, () => {
     console.log(`🚀 Server is running on http://localhost:${PORT}`);
     console.log(`📝 Health check: http://localhost:${PORT}/health`);
+    startScheduler();
   });
 
   server.on('error', (error: NodeJS.ErrnoException) => {

@@ -7,13 +7,13 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-function canAccess(role: UserRole, menu: 'home' | 'submissions' | 'providers' | 'products' | 'users' | 'profile'): boolean {
+function canAccess(role: UserRole, menu: 'home' | 'submissions' | 'providers' | 'products' | 'users' | 'jobs' | 'profile'): boolean {
   if (menu === 'profile') return true;
   switch (role) {
     case 'administrator':
       return true;
     case 'manager':
-      return menu !== 'users';
+      return menu !== 'users' && menu !== 'jobs';
     case 'operator':
       return menu === 'home' || menu === 'submissions' || menu === 'products';
     default:
@@ -46,7 +46,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     return currentHash === hash;
   };
 
-  const nav = (hash: string, label: string, menu: 'home' | 'submissions' | 'providers' | 'products' | 'users' | 'profile') => {
+  const nav = (hash: string, label: string, menu: 'home' | 'submissions' | 'providers' | 'products' | 'users' | 'jobs' | 'profile') => {
     if (!canAccess(role, menu)) return null;
     return (
       <a
@@ -104,6 +104,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           {nav('#providers', 'Providers', 'providers')}
           {nav('#products', 'Products', 'products')}
           {nav('#users', 'Users', 'users')}
+          {nav('#jobs', 'Pipeline Jobs', 'jobs')}
         </nav>
       </header>
       <main className="layout-main">

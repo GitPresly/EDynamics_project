@@ -8,18 +8,24 @@ import { ProvidersPage } from './pages/ProvidersPage/ProvidersPage';
 import { ProductsPage } from './pages/ProductsPage/ProductsPage';
 import { ProductEditPage } from './pages/ProductEditPage/ProductEditPage';
 import { UsersPage } from './pages/UsersPage/UsersPage';
+import { JobsPage } from './pages/JobsPage/JobsPage';
 import { ProfilePage } from './pages/ProfilePage/ProfilePage';
 import './App.css';
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const [currentPage, setCurrentPage] = useState<'home' | 'submissions' | 'providers' | 'products' | 'product-edit' | 'users' | 'profile'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'submissions' | 'providers' | 'products' | 'product-edit' | 'users' | 'jobs' | 'profile'>('home');
 
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash;
       const role = user?.role;
       if (hash === '#users' && role !== 'administrator') {
+        window.location.hash = '#';
+        setCurrentPage('home');
+        return;
+      }
+      if (hash === '#jobs' && role !== 'administrator') {
         window.location.hash = '#';
         setCurrentPage('home');
         return;
@@ -34,6 +40,7 @@ function AppContent() {
       else if (hash === '#products') setCurrentPage('products');
       else if (hash.startsWith('#products/edit/')) setCurrentPage('product-edit');
       else if (hash === '#users') setCurrentPage('users');
+      else if (hash === '#jobs') setCurrentPage('jobs');
       else if (hash === '#profile') setCurrentPage('profile');
       else if (hash.startsWith('#edit/')) setCurrentPage('home');
       else setCurrentPage('home');
@@ -63,6 +70,7 @@ function AppContent() {
       {currentPage === 'products' && <ProductsPage />}
       {currentPage === 'product-edit' && <ProductEditPage />}
       {currentPage === 'users' && <UsersPage />}
+      {currentPage === 'jobs' && <JobsPage />}
       {currentPage === 'profile' && <ProfilePage />}
     </Layout>
   );

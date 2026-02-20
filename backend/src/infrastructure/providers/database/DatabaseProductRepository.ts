@@ -1,7 +1,9 @@
+import { ResultSetHeader } from 'mysql2';
 import { databaseClient } from '../../database/databaseClient';
 import { Product } from '../../../domain/entities/Product/Product';
 import { NormalizedProduct } from '../../../domain/entities/NormalizedProduct/NormalizedProduct';
 import { ProductEntity } from '../../../domain/entities/Product/ProductEntity';
+import type { AiStatus, ProductAiStatusRow } from '../interfaces/IProductRepository';
 import { IProductRepository } from '../interfaces/IProductRepository';
 
 /**
@@ -407,6 +409,69 @@ export class DatabaseProductRepository implements IProductRepository {
       },
       hasNormalized: row.normalizedId != null,
     }));
+  }
+
+  async findByAiStatus(
+    status: AiStatus,
+    providerId?: string,
+    limit: number = 100,
+  ): Promise<ProductAiStatusRow[]> {
+    const params: (string | number)[] = [status];
+    let whereClause = 'WHERE ai_status = ?';
+    if (providerId) {
+      whereClause += ' AND provider_id = ?';
+      params.push(providerId);
+    }
+    const safeLimit = Math.max(1, Math.min(500, limit));
+    params.push(safeLimit);
+
+    const rows = await databaseClient.query<any>(
+      `SELECT id, provider_id AS providerId FROM ${this.productsTable}
+       ${whereClause} ORDER BY updated_at ASC LIMIT ?`,
+      params,
+    );
+    return rows.map((r: { id: string; providerId: string }) => ({
+      id: r.id,
+      providerId: r.providerId,
+    }));
+  }
+
+  async updateAiStatus(
+    providerId: string,
+    productId: string,
+    status: AiStatus,
+    aiError?: string | null,
+  ): Promise<void> {
+    await databaseClient.query(
+      `UPDATE ${this.productsTable}
+       SET ai_status = ?, ai_updated_at = NOW(6), ai_error = ?
+       WHERE provider_id = ? AND id = ?`,
+      [status, aiError ?? null, providerId, productId],
+    );
+  }
+
+  async setAiStatusByProvider(providerId: string, status: AiStatus): Promise<number> {
+    const pool = databaseClient.getPool();
+    const [result] = await pool.execute<ResultSetHeader>(
+      `UPDATE ${this.productsTable} SET ai_status = ?, ai_updated_at = NULL, ai_error = NULL WHERE provider_id = ?`,
+      [status, providerId],
+    );
+    return result.affectedRows;
+  }
+
+  async resetFailedAiStatus(providerId?: string): Promise<number> {
+    const pool = databaseClient.getPool();
+    if (providerId) {
+      const [result] = await pool.execute<ResultSetHeader>(
+        `UPDATE ${this.productsTable} SET ai_status = 'pending', ai_error = NULL WHERE ai_status = 'failed' AND provider_id = ?`,
+        [providerId],
+      );
+      return result.affectedRows;
+    }
+    const [result] = await pool.execute<ResultSetHeader>(
+      `UPDATE ${this.productsTable} SET ai_status = 'pending', ai_error = NULL WHERE ai_status = 'failed'`,
+    );
+    return result.affectedRows;
   }
 }
 
