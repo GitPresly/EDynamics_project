@@ -6,7 +6,7 @@ const ADMIN_EMAIL = 'k@k.com';
 const ADMIN_PASSWORD = '1';
 const ADMIN_NAME = 'Admin';
 
-async function seedAdmin(): Promise<void> {
+export async function seedAdmin(): Promise<void> {
   const existing = await databaseClient.query<any>(
     'SELECT id FROM users WHERE email = ? LIMIT 1',
     [ADMIN_EMAIL],
@@ -25,7 +25,9 @@ async function seedAdmin(): Promise<void> {
   console.log('✅ Seeded admin user: k@k.com');
 }
 
-seedAdmin().catch((err) => {
-  console.error('❌ Seed failed:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  seedAdmin().catch((err) => {
+    console.error('❌ Seed failed:', err);
+    process.exit(1);
+  });
+}

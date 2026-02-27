@@ -15,10 +15,13 @@ build/
 .env
 .env.local
 .env.development.local
+.env.test
 .env.test.local
 .env.production.local
 !.env.sample
-!.env.example# Dependencies
+!.env.example
+!.env.test.example
+# Dependencies
 node_modules/# Data files (uncomment if you want to exclude data)
 # data/
 data/providers/

@@ -76,7 +76,7 @@ export class EnhanceProductUseCase {
 
     const product = await this.productRepository.findNormalized(providerId, productId);
     if (!product) {
-      throw new Error('Product not found');
+      throw new Error('Product not found 1');
     }
 
     const summary = productSummary(product);

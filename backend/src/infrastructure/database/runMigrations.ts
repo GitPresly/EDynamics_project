@@ -48,7 +48,7 @@ async function getMigrationFiles(): Promise<string[]> {
   }
 }
 
-async function runMigrations(): Promise<void> {
+export async function runMigrations(): Promise<void> {
   console.log('🔄 Running database migrations...');
 
   await ensureMigrationsTable();
@@ -102,8 +102,10 @@ async function runMigrations(): Promise<void> {
   console.log('🎉 All pending migrations have been applied.');
 }
 
-runMigrations().catch((error) => {
-  console.error('❌ Migration process failed:', error);
-  process.exit(1);
-});
+if (require.main === module) {
+  runMigrations().catch((error) => {
+    console.error('❌ Migration process failed:', error);
+    process.exit(1);
+  });
+}
 
