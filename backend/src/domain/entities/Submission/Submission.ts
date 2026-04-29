@@ -1,3 +1,5 @@
+export type SubmissionStatus = 'Open' | 'In Review' | 'Approved' | 'Declined';
+
 export interface Submission {
   id: string;
   name: string;
@@ -5,4 +7,7 @@ export interface Submission {
   message: string;
   createdAt: string;
   deletedAt?: string;
+  city: string;   
+  country: string;
+  status: SubmissionStatus;
 }

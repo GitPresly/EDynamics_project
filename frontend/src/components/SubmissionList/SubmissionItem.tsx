@@ -5,13 +5,13 @@ import './SubmissionList.css';
 interface SubmissionItemProps {
   submission: Submission;
   onEdit?: (submission: Submission) => void;
-  onDelete?: (id: string) => void; // Add this line
+  onDelete?: (id: string) => void;
 }
 
 export const SubmissionItem: React.FC<SubmissionItemProps> = ({ 
   submission, 
   onEdit, 
-  onDelete // Destructure here
+  onDelete 
 }) => {
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
@@ -31,33 +31,44 @@ export const SubmissionItem: React.FC<SubmissionItemProps> = ({
           <strong>{submission.name}</strong>
           <span className="submission-email">{submission.email}</span>
         </div>
-        <span className="submission-date">{formatDate(submission.createdAt)}</span>
+        {/* Status Badge */}
+        <div className={`status-badge ${(submission.status || 'Open').toLowerCase().replace(' ', '-')}`}>
+          {submission.status || 'Open'}
+        </div>
       </div>
+
+      {/* Location Row */}
+      <div className="submission-location">
+        📍 {submission.city || 'N/A'}{submission.city && submission.country ? ', ' : ''}{submission.country || ''}
+      </div>
+
       <div className="submission-message">{submission.message}</div>
       
-      {/* Container for actions */}
-      <div className="submission-actions">
-        {onEdit && (
-          <button
-            className="edit-button"
-            onClick={() => onEdit(submission)}
-            title="Edit submission"
-          >
-            ✏️ Edit
-          </button>
-        )}
+      <div className="submission-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+        <span className="submission-date">{formatDate(submission.createdAt)}</span>
         
-        {/* Add the Delete Button */}
-        {onDelete && (
-          <button
-            className="delete-button"
-            onClick={() => onDelete(submission.id)}
-            title="Delete submission"
-            style={{ color: '#d32f2f', marginLeft: '8px' }} // Optional: simple inline style if CSS isn't updated yet
-          >
-            🗑️ Delete
-          </button>
-        )}
+        <div className="submission-actions">
+          {onEdit && (
+            <button
+              className="edit-button"
+              onClick={() => onEdit(submission)}
+              title="Edit submission"
+            >
+              ✏️ Edit
+            </button>
+          )}
+          
+          {onDelete && (
+            <button
+              className="delete-button"
+              onClick={() => onDelete(submission.id)}
+              title="Delete submission"
+              style={{ color: '#d32f2f', marginLeft: '8px' }}
+            >
+              🗑️ Delete
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

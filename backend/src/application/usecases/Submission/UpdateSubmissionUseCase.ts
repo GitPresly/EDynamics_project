@@ -7,24 +7,30 @@ import { ISubmissionRepository } from '../../../infrastructure/fileSystem/fileRe
 export class UpdateSubmissionUseCase {
   constructor(private repository: ISubmissionRepository) {}
 
-  async execute(id: string, request: CreateSubmissionRequest): Promise<UpdateSubmissionResponse> {
-    // Create entity with validation
-    const updatedSubmission = SubmissionEntity.create(request);
+  async execute(id: string, request: CreateSubmissionRequest & { city?: string; country?: string; status?: string }): Promise<UpdateSubmissionResponse> {
+    // 1. Validate basic fields by creating a temporary entity (preserves your existing validation logic)
+    const validationEntity = SubmissionEntity.create(request);
 
-    // Get all submissions
-    const submissions = await this.repository.findAll();
+    // 2. Get all submissions (include deleted to ensure we find the right index)
+    const submissions = await this.repository.findAll(true);
     const index = submissions.findIndex(s => s.id === id);
 
     if (index === -1) {
       throw new Error('Submission not found');
     }
 
-    // Update submission while preserving ID and createdAt
     const existingSubmission = submissions[index];
+
+    // 3. Update only the allowed fields, preserving everything else (ID, createdAt, deletedAt)
     const updated: Submission = {
-      ...updatedSubmission.toJSON(),
+      ...existingSubmission,
       id: existingSubmission.id,
-      createdAt: existingSubmission.createdAt, // Preserve original creation date
+      name: validationEntity.name,
+      email: validationEntity.email,
+      message: validationEntity.message,
+      city: (request.city || '').trim(),
+      country: (request.country || '').trim(),
+      status: (request.status as any) || existingSubmission.status || 'Open',
     };
 
     submissions[index] = updated;

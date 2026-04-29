@@ -146,3 +146,39 @@
 .edit-button:hover {
   background: #218838;
 }
+
+.submission-location {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 5px 0 12px 0;
+  display: flex;
+  align-items: center;
+}
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Status Colors */
+.status-badge.open { background: #e3f2fd; color: #1976d2; }
+.status-badge.in-review { background: #fff3e0; color: #f57c00; }
+.status-badge.approved { background: #e8f5e9; color: #388e3c; }
+.status-badge.declined { background: #ffebee; color: #d32f2f; }
+
+.submission-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 10px;
+}
+
+.submission-date {
+  font-size: 0.75rem;
+  color: #888;
+}
