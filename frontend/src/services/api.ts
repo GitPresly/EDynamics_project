@@ -25,7 +25,9 @@ class ApiService {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || data.message || 'Request failed');
+        const error = new Error(data.error || data.message || 'Request failed') as any;
+        error.status = response.status; 
+        throw error;
       }
 
       return data;
@@ -54,7 +56,6 @@ class ApiService {
     const response = await this.request<Submission[]>('/submissions', {
       method: 'GET',
     }) as GetSubmissionsResponse;
-
     return response.data || [];
   }
 

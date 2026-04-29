@@ -7,13 +7,18 @@ export class CreateSubmissionUseCase {
   constructor(private repository: ISubmissionRepository) { }
 
   async execute(request: CreateSubmissionRequest): Promise<CreateSubmissionResponse> {
-    // Create entity with validation
+    // 1. Check if email already exists (non-deleted)
+    const existing = await this.repository.findByEmail(request.email);
+    if (existing) {
+      throw new Error('EMAIL_ALREADY_EXISTS');
+    }
+
+    // 2. Create entity with validation
     const submission = SubmissionEntity.create(request);
 
-    // Save to repository
+    // 3. Save to repository
     await this.repository.save(submission);
 
-    // Return response
     return new CreateSubmissionResponse(submission);
   }
 }

@@ -34,14 +34,16 @@ router.post('/submit', async (req: Request, res: Response) => {
 
     // Use case will handle validation through domain entity
     const response: CreateSubmissionResponse = await createSubmissionUseCase.execute(request);
-
     res.status(201).json(response);
-  } catch (error) {
+    } catch (error) {
     if (error instanceof Error) {
-      return res.status(400).json({
-        success: false,
-        error: error.message
-      });
+      if (error.message === 'EMAIL_ALREADY_EXISTS') {
+        return res.status(409).json({
+          success: false,
+          error: 'This email is already in use'
+        });
+      }
+      return res.status(400).json({ success: false, error: error.message });
     }
 
     res.status(500).json({

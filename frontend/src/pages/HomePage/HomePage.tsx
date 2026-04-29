@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Form } from '../../components/Form/Form';
 import { apiService } from '../../services/api';
 import type { Submission } from '../../domain/entities/Submission/Submission';
+import { PopUp } from '../../components/Layout/PopUp'; // Import the popup
 import './HomePage.css';
 
 export const HomePage: React.FC = () => {
   const [editingSubmission, setEditingSubmission] = useState<Submission | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [popup, setPopup] = useState({ isOpen: false, message: '' }); // Popup state
 
   useEffect(() => {
     const loadSubmissionFromHash = async () => {
@@ -19,11 +21,8 @@ export const HomePage: React.FC = () => {
         try {
           const submission = await apiService.getSubmissionById(submissionId);
           setEditingSubmission(submission);
-          setTimeout(() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }, 100);
+          setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 100);
         } catch (error) {
-          console.error('Failed to load submission:', error);
           setEditingSubmission(null);
           window.location.hash = '';
         } finally {
@@ -35,15 +34,8 @@ export const HomePage: React.FC = () => {
     };
 
     loadSubmissionFromHash();
-
-    const handleHashChange = () => {
-      loadSubmissionFromHash();
-    };
-
-    window.addEventListener('hashchange', handleHashChange);
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-    };
+    window.addEventListener('hashchange', loadSubmissionFromHash);
+    return () => window.removeEventListener('hashchange', loadSubmissionFromHash);
   }, []);
 
   const handleFormSubmitSuccess = () => {
@@ -69,14 +61,20 @@ export const HomePage: React.FC = () => {
     <div className="home-page">
       <div className="home-header">
         <h1>Submit a Form</h1>
-        <a href="#submissions" className="view-submissions-link">
-          View All Submissions →
-        </a>
+        <a href="#submissions" className="view-submissions-link">View All Submissions →</a>
       </div>
       <Form
         onSubmitSuccess={handleFormSubmitSuccess}
         editSubmission={editingSubmission}
         onCancelEdit={handleCancelEdit}
+        onError={(msg) => setPopup({ isOpen: true, message: msg })} // Catch error here
+      />
+
+      <PopUp 
+        isOpen={popup.isOpen} 
+        onClose={() => setPopup({ ...popup, isOpen: false })}
+        title="Duplicate Email"
+        message={popup.message}
       />
     </div>
   );
