@@ -4,4 +4,5 @@ export interface Submission {
   email: string;
   message: string;
   createdAt: string;
+  deletedAt?: string;
 }

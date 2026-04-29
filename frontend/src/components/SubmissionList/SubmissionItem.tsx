@@ -5,9 +5,14 @@ import './SubmissionList.css';
 interface SubmissionItemProps {
   submission: Submission;
   onEdit?: (submission: Submission) => void;
+  onDelete?: (id: string) => void; // Add this line
 }
 
-export const SubmissionItem: React.FC<SubmissionItemProps> = ({ submission, onEdit }) => {
+export const SubmissionItem: React.FC<SubmissionItemProps> = ({ 
+  submission, 
+  onEdit, 
+  onDelete // Destructure here
+}) => {
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleString('en-US', {
@@ -29,8 +34,10 @@ export const SubmissionItem: React.FC<SubmissionItemProps> = ({ submission, onEd
         <span className="submission-date">{formatDate(submission.createdAt)}</span>
       </div>
       <div className="submission-message">{submission.message}</div>
-      {onEdit && (
-        <div className="submission-actions">
+      
+      {/* Container for actions */}
+      <div className="submission-actions">
+        {onEdit && (
           <button
             className="edit-button"
             onClick={() => onEdit(submission)}
@@ -38,8 +45,20 @@ export const SubmissionItem: React.FC<SubmissionItemProps> = ({ submission, onEd
           >
             ✏️ Edit
           </button>
-        </div>
-      )}
+        )}
+        
+        {/* Add the Delete Button */}
+        {onDelete && (
+          <button
+            className="delete-button"
+            onClick={() => onDelete(submission.id)}
+            title="Delete submission"
+            style={{ color: '#d32f2f', marginLeft: '8px' }} // Optional: simple inline style if CSS isn't updated yet
+          >
+            🗑️ Delete
+          </button>
+        )}
+      </div>
     </div>
   );
 };

@@ -7,7 +7,8 @@ export class SubmissionEntity {
     public readonly name: string,
     public readonly email: string,
     public readonly message: string,
-    public readonly createdAt: string
+    public readonly createdAt: string,
+    public readonly deletedAt?: string
   ) { }
 
   static create(request: CreateSubmissionRequest): SubmissionEntity {
@@ -49,7 +50,8 @@ export class SubmissionEntity {
       data.name,
       data.email,
       data.message,
-      data.createdAt
+      data.createdAt,
+      data.deletedAt
     );
   }
 
@@ -60,7 +62,19 @@ export class SubmissionEntity {
       email: this.email,
       message: this.message,
       createdAt: this.createdAt,
+      deletedAt: this.deletedAt,
     };
+  }
+
+  softDelete(): SubmissionEntity {
+    return new SubmissionEntity(
+      this.id,
+      this.name,
+      this.email,
+      this.message,
+      this.createdAt,
+      new Date().toISOString() // Current date and hour
+    );
   }
 
   private static generateId(): string {

@@ -8,6 +8,7 @@ import { CreateSubmissionUseCase } from '../../application/usecases/Submission/C
 import { GetAllSubmissionsUseCase } from '../../application/usecases/Submission/GetAllSubmissionsUseCase';
 import { UpdateSubmissionUseCase } from '../../application/usecases/Submission/UpdateSubmissionUseCase';
 import { GetSubmissionByIdUseCase } from '../../application/usecases/Submission/GetSubmissionByIdUseCase';
+import { DeleteSubmissionUseCase } from '../../application/usecases/Submission/DeleteSubmissionUseCase';
 
 const router = Router();
 
@@ -17,6 +18,7 @@ const createSubmissionUseCase = new CreateSubmissionUseCase(repository);
 const getAllSubmissionsUseCase = new GetAllSubmissionsUseCase(repository);
 const updateSubmissionUseCase = new UpdateSubmissionUseCase(repository);
 const getSubmissionByIdUseCase = new GetSubmissionByIdUseCase(repository);
+const deleteSubmissionUseCase = new DeleteSubmissionUseCase(repository);
 
 router.post('/submit', async (req: Request, res: Response) => {
   try {
@@ -117,6 +119,20 @@ router.put('/submissions/:id', async (req: Request, res: Response) => {
       success: false,
       error: 'Internal server error',
       message: 'An unexpected error occurred'
+    });
+  }
+});
+
+router.delete('/submissions/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await deleteSubmissionUseCase.execute(id);
+    res.status(200).json({ success: true, message: 'Submission deleted successfully' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(error instanceof Error && message === 'Submission not found' ? 404 : 400).json({
+      success: false,
+      error: message
     });
   }
 });

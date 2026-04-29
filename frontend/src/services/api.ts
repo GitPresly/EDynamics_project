@@ -82,6 +82,16 @@ class ApiService {
 
     return response.data;
   }
+
+  async deleteSubmission(id: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/submissions/${id}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to delete submission');
+  }
+}
 }
 
 export const apiService = new ApiService();

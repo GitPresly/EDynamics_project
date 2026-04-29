@@ -23,9 +23,10 @@ const DATA_FILE_PATH = getDataFilePath();
 
 export interface ISubmissionRepository {
   save(submission: SubmissionEntity): Promise<void>;
-  findAll(): Promise<Submission[]>;
+  findAll(includeDeleted?: boolean): Promise<Submission[]>;
   findById(id: string): Promise<Submission | null>;
   saveAll(submissions: Submission[]): Promise<void>;
+   delete(id: string): Promise<void>;
 }
 
 export class FileRepository implements ISubmissionRepository {
@@ -34,7 +35,6 @@ export class FileRepository implements ISubmissionRepository {
     try {
       await fs.access(DATA_FILE_PATH);
     } catch {
-      // File doesn't exist, create it with empty array
       await fs.writeFile(DATA_FILE_PATH, JSON.stringify([], null, 2), 'utf-8');
     }
   }
@@ -52,19 +52,32 @@ export class FileRepository implements ISubmissionRepository {
     );
   }
 
-  async findAll(): Promise<Submission[]> {
+  async findAll(includeDeleted: boolean = false): Promise<Submission[]> {
     await this.ensureDataFile();
-
     try {
       const data = await fs.readFile(DATA_FILE_PATH, 'utf-8');
       const submissions: Submission[] = JSON.parse(data);
+      
+      if (!includeDeleted) {
+        return submissions.filter(s => !s.deletedAt);
+      }
       return submissions;
     } catch (error) {
-      // If file is empty or invalid, return empty array
-      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-        return [];
-      }
-      throw new Error(`Failed to read submissions: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return [];
+    }
+  }
+
+  async delete(id: string): Promise<void> {
+    const submissions = await this.findAll(true);
+    const index = submissions.findIndex(s => s.id === id);
+    
+    if (index !== -1) {
+      const entity = SubmissionEntity.fromData(submissions[index]);
+      submissions[index] = entity.softDelete().toJSON();
+      
+      await this.saveAll(submissions);
+    } else {
+      throw new Error('Submission not found');
     }
   }
 

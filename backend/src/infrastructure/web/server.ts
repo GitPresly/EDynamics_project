@@ -43,6 +43,7 @@ export function createServer(): Express {
   console.log('  POST /api/submit');
   console.log('  GET /api/submissions');
   console.log('  PUT /api/submissions/:id');
+  console.log(' DELETE /api/submissions/:id');
 
   return app;
 }
