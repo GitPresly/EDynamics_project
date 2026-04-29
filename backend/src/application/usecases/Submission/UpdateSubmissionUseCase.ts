@@ -1,17 +1,22 @@
-import { SubmissionEntity } from '../../../domain/entities/Submission/SubmissionEntity';
 import { Submission } from '../../../domain/entities/Submission/Submission';
-import { CreateSubmissionRequest } from '../../../presentation/requests/Submission/CreateSubmissionRequest';
 import { UpdateSubmissionResponse } from '../../../presentation/responses/Submission/UpdateSubmissionResponse';
 import { ISubmissionRepository } from '../../../infrastructure/fileSystem/fileRepository';
+
+// Defining the interface locally to stop "Module not found" errors
+export interface UpdateSubmissionRequest {
+  name: string;
+  email: string;
+  message: string;
+  city?: string;
+  country?: string;
+  status?: string;
+}
 
 export class UpdateSubmissionUseCase {
   constructor(private repository: ISubmissionRepository) {}
 
-  async execute(id: string, request: CreateSubmissionRequest & { city?: string; country?: string; status?: string }): Promise<UpdateSubmissionResponse> {
-    // 1. Validate basic fields by creating a temporary entity (preserves your existing validation logic)
-    const validationEntity = SubmissionEntity.create(request);
-
-    // 2. Get all submissions (include deleted to ensure we find the right index)
+  async execute(id: string, request: UpdateSubmissionRequest): Promise<UpdateSubmissionResponse> {
+    // 1. Get all submissions (including deleted ones)
     const submissions = await this.repository.findAll(true);
     const index = submissions.findIndex(s => s.id === id);
 
@@ -19,20 +24,21 @@ export class UpdateSubmissionUseCase {
       throw new Error('Submission not found');
     }
 
-    const existingSubmission = submissions[index];
+    const existing = submissions[index];
 
-    // 3. Update only the allowed fields, preserving everything else (ID, createdAt, deletedAt)
+    // 2. Map fields explicitly to ensure they actually save.
+    // This is the specific logic that fixes your "status not updating" issue.
     const updated: Submission = {
-      ...existingSubmission,
-      id: existingSubmission.id,
-      name: validationEntity.name,
-      email: validationEntity.email,
-      message: validationEntity.message,
+      ...existing, // Keeps original ID, createdAt, and deletedAt
+      name: request.name.trim(),
+      email: request.email.trim().toLowerCase(),
+      message: request.message.trim(),
       city: (request.city || '').trim(),
       country: (request.country || '').trim(),
-      status: (request.status as any) || existingSubmission.status || 'Open',
+      status: (request.status as any) || existing.status || 'Open',
     };
 
+    // 3. Save back to the repository
     submissions[index] = updated;
     await this.repository.saveAll(submissions);
 

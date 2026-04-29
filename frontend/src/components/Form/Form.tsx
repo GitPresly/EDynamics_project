@@ -14,7 +14,6 @@ interface FormProps {
 }
 
 export const Form: React.FC<FormProps> = ({ onSubmitSuccess, editSubmission, onCancelEdit, onError }) => {
-  // Updated state to include new fields
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -73,10 +72,13 @@ export const Form: React.FC<FormProps> = ({ onSubmitSuccess, editSubmission, onC
 
     try {
       if (isEditMode && editSubmission) {
-        await apiService.updateSubmission(editSubmission.id, formData);
+        // Cast to UpdateSubmissionRequest
+        const updateData: UpdateSubmissionRequest = { ...formData };
+        await apiService.updateSubmission(editSubmission.id, updateData);
         setSubmitMessage({ type: 'success', text: 'Submission updated successfully!' });
       } else {
-        await apiService.submitForm(formData as CreateSubmissionRequest);
+        // Cast to any/CreateSubmissionRequest (handles city/country if backend supports them on create)
+        await apiService.submitForm(formData as any);
         setSubmitMessage({ type: 'success', text: 'Form submitted successfully!' });
       }
 
@@ -85,7 +87,7 @@ export const Form: React.FC<FormProps> = ({ onSubmitSuccess, editSubmission, onC
       if (isEditMode && onCancelEdit) onCancelEdit();
     } catch (error: any) {
       if (error.status === 409 && onError) {
-        onError("This email address is already in use. Please use a different one or edit your existing submission.");
+        onError("This email address is already in use. Please use a different one.");
       } else {
         setSubmitMessage({ type: 'error', text: error.message || 'Failed to submit form' });
       }
@@ -106,7 +108,6 @@ export const Form: React.FC<FormProps> = ({ onSubmitSuccess, editSubmission, onC
       <FormField label="Name" name="name" type="text" value={formData.name} onChange={handleChange} error={errors.name} required />
       <FormField label="Email" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} required />
       
-      {/* New Fields Section */}
       <div className="form-row" style={{ display: 'flex', gap: '1rem' }}>
         <FormField label="City" name="city" value={formData.city} onChange={handleChange} />
         <FormField label="Country" name="country" value={formData.country} onChange={handleChange} />
@@ -114,8 +115,8 @@ export const Form: React.FC<FormProps> = ({ onSubmitSuccess, editSubmission, onC
 
       {isEditMode && (
         <div className="form-field">
-          <label className="form-label">Status</label>
-          <select name="status" value={formData.status} onChange={handleChange} className="form-input">
+          <label className="form-label" htmlFor="status">Status</label>
+          <select id="status" name="status" value={formData.status} onChange={handleChange} className="form-input">
             <option value="Open">Open</option>
             <option value="In Review">In Review</option>
             <option value="Approved">Approved</option>

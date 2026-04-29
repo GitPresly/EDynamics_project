@@ -24,6 +24,14 @@ export const SubmissionItem: React.FC<SubmissionItemProps> = ({
     });
   };
 
+  // Helper to get formatted location string
+  const renderLocation = () => {
+    const { city, country } = submission;
+    if (city && country) return `${city}, ${country}`;
+    if (city || country) return city || country;
+    return 'N/A';
+  };
+
   return (
     <div className="submission-item">
       <div className="submission-header">
@@ -32,19 +40,19 @@ export const SubmissionItem: React.FC<SubmissionItemProps> = ({
           <span className="submission-email">{submission.email}</span>
         </div>
         {/* Status Badge */}
-        <div className={`status-badge ${(submission.status || 'Open').toLowerCase().replace(' ', '-')}`}>
+        <div className={`status-badge ${(submission.status || 'Open').toLowerCase().replace(/\s+/g, '-')}`}>
           {submission.status || 'Open'}
         </div>
       </div>
 
       {/* Location Row */}
       <div className="submission-location">
-        📍 {submission.city || 'N/A'}{submission.city && submission.country ? ', ' : ''}{submission.country || ''}
+        <span className="location-icon">📍</span> {renderLocation()}
       </div>
 
       <div className="submission-message">{submission.message}</div>
       
-      <div className="submission-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+      <div className="submission-footer">
         <span className="submission-date">{formatDate(submission.createdAt)}</span>
         
         <div className="submission-actions">
@@ -63,7 +71,6 @@ export const SubmissionItem: React.FC<SubmissionItemProps> = ({
               className="delete-button"
               onClick={() => onDelete(submission.id)}
               title="Delete submission"
-              style={{ color: '#d32f2f', marginLeft: '8px' }}
             >
               🗑️ Delete
             </button>
