@@ -5,14 +5,9 @@ import './SubmissionList.css';
 interface SubmissionItemProps {
   submission: Submission;
   onEdit?: (submission: Submission) => void;
-  onDelete?: (id: string) => void;
 }
 
-export const SubmissionItem: React.FC<SubmissionItemProps> = ({ 
-  submission, 
-  onEdit, 
-  onDelete 
-}) => {
+export const SubmissionItem: React.FC<SubmissionItemProps> = ({ submission, onEdit }) => {
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleString('en-US', {
@@ -24,14 +19,6 @@ export const SubmissionItem: React.FC<SubmissionItemProps> = ({
     });
   };
 
-  // Helper to get formatted location string
-  const renderLocation = () => {
-    const { city, country } = submission;
-    if (city && country) return `${city}, ${country}`;
-    if (city || country) return city || country;
-    return 'N/A';
-  };
-
   return (
     <div className="submission-item">
       <div className="submission-header">
@@ -39,44 +26,20 @@ export const SubmissionItem: React.FC<SubmissionItemProps> = ({
           <strong>{submission.name}</strong>
           <span className="submission-email">{submission.email}</span>
         </div>
-        {/* Status Badge */}
-        <div className={`status-badge ${(submission.status || 'Open').toLowerCase().replace(/\s+/g, '-')}`}>
-          {submission.status || 'Open'}
-        </div>
-      </div>
-
-      {/* Location Row */}
-      <div className="submission-location">
-        <span className="location-icon">📍</span> {renderLocation()}
-      </div>
-
-      <div className="submission-message">{submission.message}</div>
-      
-      <div className="submission-footer">
         <span className="submission-date">{formatDate(submission.createdAt)}</span>
-        
-        <div className="submission-actions">
-          {onEdit && (
-            <button
-              className="edit-button"
-              onClick={() => onEdit(submission)}
-              title="Edit submission"
-            >
-              ✏️ Edit
-            </button>
-          )}
-          
-          {onDelete && (
-            <button
-              className="delete-button"
-              onClick={() => onDelete(submission.id)}
-              title="Delete submission"
-            >
-              🗑️ Delete
-            </button>
-          )}
-        </div>
       </div>
+      <div className="submission-message">{submission.message}</div>
+      {onEdit && (
+        <div className="submission-actions">
+          <button
+            className="edit-button"
+            onClick={() => onEdit(submission)}
+            title="Edit submission"
+          >
+            ✏️ Edit
+          </button>
+        </div>
+      )}
     </div>
   );
 };

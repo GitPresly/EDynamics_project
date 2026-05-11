@@ -1,11 +1,12 @@
 # Product Optimizer Platform
 
-Full-stack application with React frontend and Node.js backend using Clean Architecture.
+Full-stack application for managing submissions, providers, products, and background jobs (import/enrich) with role-based access. React frontend and Node.js backend using Clean Architecture.
 
 ## Project Structure
 
 ```
 Platform/
+├── docs/              # Documentation (API, architecture, setup)
 ├── frontend/          # Vite + React + TypeScript
 ├── backend/           # Node.js + Express + TypeScript (Clean Architecture)
 └── package.json       # Root workspace configuration
@@ -13,68 +14,43 @@ Platform/
 
 ## Features
 
-- ✅ React + TypeScript frontend with component-based architecture
-- ✅ Node.js + Express backend with Clean Architecture
-- ✅ Form submission with validation
-- ✅ Data persistence in JSON file
-- ✅ Display list of all submissions
-- ✅ Modern UI with responsive design
+- **Auth**: JWT login, profile update, roles (`administrator`, `manager`, `operator`)
+- **Submissions**: Create, list, get, update (with validation)
+- **Providers**: List providers, sync from external catalog (e.g. EasyGifts), normalize products
+- **Products**: List, get, update, AI-powered enhance (DeepInfra)
+- **Users**: List and create users (admin only)
+- **Jobs**: Trigger import/enrich, list runs, failed products, retry (admin only); optional cron scheduler
+- **Storage**: MySQL or file-based (configurable via `STORAGE_DRIVER`)
 
 ## Prerequisites
 
 - Node.js (v16 or higher)
 - npm
+- MySQL (when using database storage)
 
 ## Installation
 
-1. Install root dependencies:
-```bash
-npm install
-```
+1. Install dependencies:
 
-2. Install frontend dependencies:
-```bash
-cd frontend
-npm install
-```
+   ```bash
+   npm install
+   npm run install:all
+   ```
 
-3. Install backend dependencies:
-```bash
-cd ../backend
-npm install
-```
-
-Or install all at once:
-```bash
-npm run install:all
-```
+2. Configure environment and database: see [Setup](docs/SETUP.md) for environment variables and database setup.
 
 ## Running the Application
 
-### Development Mode
+**Development (both frontend and backend):**
 
-**Start both frontend and backend with one command:**
 ```bash
 npm run dev
 ```
 
-This will start both the backend server (port 3001) and frontend dev server (port 5173) simultaneously in the same terminal.
+See [Setup](docs/SETUP.md) for environment variables and database.
 
 **Or run separately:**
 
-Terminal 1 - Backend:
-```bash
-cd backend
-npm run dev
-```
-
-Terminal 2 - Frontend:
-```bash
-cd frontend
-npm run dev
-```
-
-**Or from root:**
 ```bash
 npm run dev:backend
 npm run dev:frontend
@@ -82,54 +58,29 @@ npm run dev:frontend
 
 ### Build for Production
 
-Build both frontend and backend:
 ```bash
 npm run build
-```
-
-Or build separately:
-```bash
-npm run build:frontend
-npm run build:backend
 ```
 
 ## Access the Application
 
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:3001
-- **Health Check**: http://localhost:3001/health
+- **Health check**: http://localhost:3001/health
 
-## API Endpoints
+## API
 
-- `POST /api/submit` - Submit a new form
-  ```json
-  {
-    "name": "John Doe",
-    "email": "john@example.com",
-    "message": "Hello world"
-  }
-  ```
-
-- `GET /api/submissions` - Get all submissions
+See [API Reference](docs/API.md) for all endpoints (auth, submissions, providers, products, users, jobs).
 
 ## Architecture
 
-### Backend (Clean Architecture)
-
-- **Domain Layer**: Business entities and validation
-- **Application Layer**: Business logic and use cases
-- **Infrastructure Layer**: File system operations and Express server
-- **Presentation Layer**: HTTP controllers and routes
-
-### Frontend
-
-- **Pages**: Page-level components
-- **Components**: Reusable UI components
-- **Services**: API communication
-- **Types**: TypeScript type definitions
+Backend follows Clean Architecture (domain, application, infrastructure, presentation). Frontend is a React SPA with auth context and hash routing. See [Architecture](docs/ARCHITECTURE.md) for layers, data flow, and roles; [Use Cases](docs/usecases/README.md) for application-layer use cases (one file per use case in `docs/usecases/`).
 
 ## Technologies
 
 - **Frontend**: React 19, TypeScript, Vite
-- **Backend**: Node.js, Express, TypeScript
-- **Architecture**: Clean Architecture pattern
+- **Backend**: Node.js, Express, TypeScript, Clean Architecture
+- **Storage**: MySQL (with migrations) or file
+- **Auth**: JWT
+- **AI**: DeepInfra (product enhancement)
+- **Jobs**: node-cron (optional scheduled import/enrich)

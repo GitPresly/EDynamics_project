@@ -15,17 +15,16 @@ build/
 .env
 .env.local
 .env.development.local
+.env.test
 .env.test.local
 .env.production.local
 !.env.sample
 !.env.example
-
+!.env.test.example
 # Dependencies
-node_modules/
-
-# Data files (uncomment if you want to exclude data)
+node_modules/# Data files (uncomment if you want to exclude data)
 # data/
-
+data/providers/
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -35,8 +34,6 @@ node_modules/
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
-
-# OS files
+*.sw?# OS files
 Thumbs.db
 .DS_Store

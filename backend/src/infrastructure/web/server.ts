@@ -1,7 +1,14 @@
 import 'dotenv/config';
 import express, { Express } from 'express';
 import cors from 'cors';
+import { authRouter } from '../../presentation/controllers/authController';
 import { formRouter } from '../../presentation/controllers/formController';
+import { providerRouter } from '../../presentation/controllers/providerController';
+import { productRouter } from '../../presentation/controllers/productController';
+import { userRouter } from '../../presentation/controllers/userController';
+import { jobRouter } from '../../presentation/controllers/jobController';
+import { authMiddleware, requireRole } from './authMiddleware';
+import { startScheduler } from '../jobs/scheduler';
 
 const PORT = process.env.PORT || 3001;
 
@@ -26,6 +33,13 @@ export function createServer(): Express {
         submit: 'POST /api/submit',
         submissions: 'GET /api/submissions',
         updateSubmission: 'PUT /api/submissions/:id',
+        providers: 'GET /api/providers',
+        syncProvider: 'POST /api/providers/:provider/sync',
+        normalize: 'POST /api/providers/:provider/normalize',
+        products: 'GET /api/products',
+        product: 'GET /api/products/:providerId/:id',
+        updateProduct: 'PUT /api/products/:providerId/:id',
+        enhanceProduct: 'POST /api/products/:providerId/:id/enhance',
       },
     });
   });
@@ -35,15 +49,38 @@ export function createServer(): Express {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // API routes
-  app.use('/api', formRouter);
+  // Auth (public)
+  app.use('/api', authRouter);
+
+  // Protected API routes (require login)
+  app.use('/api', authMiddleware, formRouter);
+  app.use('/api', authMiddleware, providerRouter);
+  app.use('/api', authMiddleware, productRouter);
+  app.use('/api', userRouter);
+  app.use('/api/admin/jobs', authMiddleware, requireRole('administrator'), jobRouter);
 
   // Log all registered routes for debugging
   console.log('📋 Registered API routes:');
-  console.log('  POST /api/submit');
-  console.log('  GET /api/submissions');
-  console.log('  PUT /api/submissions/:id');
-  console.log(' DELETE /api/submissions/:id');
+  console.log('  POST /api/auth/login');
+  console.log('  GET /api/auth/me (auth required)');
+  console.log('  POST /api/submit (auth required)');
+  console.log('  GET /api/submissions (auth required)');
+  console.log('  PUT /api/submissions/:id (auth required)');
+  console.log('  GET /api/providers (auth required)');
+  console.log('  POST /api/providers/:provider/sync (auth required)');
+  console.log('  POST /api/providers/:provider/normalize (auth required)');
+  console.log('  GET /api/products (auth required)');
+  console.log('  GET /api/products/:providerId/:id (auth required)');
+  console.log('  PUT /api/products/:providerId/:id (auth required)');
+  console.log('  POST /api/products/:providerId/:id/enhance (auth required)');
+  console.log('  GET /api/users (admin only)');
+  console.log('  POST /api/users (admin only)');
+  console.log('  POST /api/admin/jobs/import (admin only)');
+  console.log('  POST /api/admin/jobs/enrich (admin only)');
+  console.log('  GET /api/admin/jobs (admin only)');
+  console.log('  GET /api/admin/jobs/:id (admin only)');
+  console.log('  GET /api/admin/jobs/failed-products (admin only)');
+  console.log('  POST /api/admin/jobs/retry-failed (admin only)');
 
   return app;
 }
@@ -54,6 +91,7 @@ export function startServer(): void {
   const server = app.listen(PORT, () => {
     console.log(`🚀 Server is running on http://localhost:${PORT}`);
     console.log(`📝 Health check: http://localhost:${PORT}/health`);
+    startScheduler();
   });
 
   server.on('error', (error: NodeJS.ErrnoException) => {

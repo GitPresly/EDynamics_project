@@ -67,35 +67,48 @@
   background: #357abd;
 }
 
-.submission-item {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+.submission-items {
   display: flex;
   flex-direction: column;
-  border: 1px solid #eee;
-  transition: transform 0.2s;
+  gap: 1rem;
+}
+
+.submission-item {
+  padding: 1.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fafafa;
+  transition: box-shadow 0.2s;
 }
 
 .submission-item:hover {
-  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .submission-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .submission-author {
   display: flex;
   flex-direction: column;
+  gap: 0.25rem;
 }
 
-.submission-author strong { font-size: 1.1rem; color: #333; }
-.submission-email { font-size: 0.85rem; color: #888; }
+.submission-author strong {
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.submission-email {
+  color: #666;
+  font-size: 0.9rem;
+}
 
 .submission-date {
   color: #999;
@@ -104,65 +117,32 @@
 }
 
 .submission-message {
-  font-size: 0.95rem;
-  color: #444;
-  line-height: 1.5;
-  margin-bottom: 20px;
-  flex-grow: 1;
+  color: #555;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin-bottom: 1rem;
 }
 
-.submission-actions { display: flex; gap: 8px; }
-
-.edit-button, .delete-button {
+.submission-actions {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-  background: white;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: all 0.2s;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
 }
 
-.edit-button { color: #2ecc71; border-color: #2ecc71; }
-.edit-button:hover { background: #2ecc71; color: white; }
-
-.delete-button { color: #e74c3c; border-color: #e74c3c; }
-.delete-button:hover { background: #e74c3c; color: white; }
-
-.submission-location {
+.edit-button {
+  padding: 0.5rem 1rem;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
   font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 15px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.location-icon { color: #ff4757; }
-
-/* Status Badges */
-.status-badge {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
+.edit-button:hover {
+  background: #218838;
 }
-
-.status-badge.open { background: #e3f2fd; color: #1976d2; }
-.status-badge.in-review { background: #fff3e0; color: #f57c00; }
-.status-badge.approved { background: #e8f5e9; color: #388e3c; }
-.status-badge.declined { background: #ffebee; color: #d32f2f; }
-
-.submission-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 15px;
-  border-top: 1px solid #f5f5f5;
-}
-
-.submission-date { font-size: 0.8rem; color: #aaa; }

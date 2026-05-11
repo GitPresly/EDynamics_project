@@ -6,9 +6,6 @@ export class UpdateSubmissionResponse extends Response {
   name: string;
   email: string;
   message: string;
-  city: string;    // Added
-  country: string; // Added
-  status: string;  // Added
   createdAt: string;
 
   constructor(
@@ -21,9 +18,6 @@ export class UpdateSubmissionResponse extends Response {
     this.name = submission.name;
     this.email = submission.email;
     this.message = submission.message;
-    this.city = submission.city || '';       // Mapping new field
-    this.country = submission.country || ''; // Mapping new field
-    this.status = submission.status || 'Open'; // Mapping new field
     this.createdAt = submission.createdAt;
   }
 }
