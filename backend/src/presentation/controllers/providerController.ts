@@ -20,6 +20,7 @@ const productRepository = createProductRepository();
 const processProductsUseCase = new ProcessProductsUseCase(productRepository);
 const normalizeProductsUseCase = new NormalizeProductsUseCase(productRepository);
 const getProvidersUseCase = new GetProvidersUseCase(providerRepository, productRepository);
+import { MidoceanProvider } from '../../infrastructure/providers/MidoceanProvider';
 
 // Factory function to create provider instances
 const createProvider = (providerName: string): IProvider => {
@@ -32,6 +33,13 @@ const createProvider = (providerName: string): IProvider => {
         throw new Error('EASYGIFTS_API_URL environment variable is not set');
       }
       return new EasyGiftsProvider(httpClient, apiUrl);
+
+      case 'midocean':
+      return new MidoceanProvider(
+        httpClient, 
+        process.env.MIDOCEAN_API_URL, 
+        process.env.MIDOCEAN_API_KEY
+      );
 
     // Future providers can be added here
     // case 'anotherprovider':

@@ -15,6 +15,8 @@ export class GetProvidersUseCase {
     const easyGiftsInfo = await this.getProviderInfo('EasyGifts', 'easygifts');
     providers.push(easyGiftsInfo);
 
+    providers.push(await this.getProviderInfo('Midocean', 'midocean'));
+
     // Future providers can be added here
     // const anotherProviderInfo = await this.getProviderInfo('AnotherProvider', 'another');
     // providers.push(anotherProviderInfo);
@@ -45,6 +47,8 @@ export class GetProvidersUseCase {
     switch (key) {
       case 'easygifts':
         return !!process.env.EASYGIFTS_API_URL;
+      case 'midocean':
+        return !!process.env.MIDOCEAN_API_URL && !!process.env.MIDOCEAN_API_KEY;
       default:
         return false;
     }
