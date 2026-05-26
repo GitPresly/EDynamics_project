@@ -11,6 +11,7 @@ import { GetProvidersUseCase } from '../../application/usecases/Provider/GetProv
 import { SyncProviderResponse } from '../responses/Provider/SyncProviderResponse';
 import { NormalizeProductsResponse } from '../responses/Provider/NormalizeProductsResponse';
 import { GetProvidersResponse } from '../responses/Provider/GetProvidersResponse';
+import { requireRole } from '../../infrastructure/web/authMiddleware';
 
 const router = Router();
 
@@ -56,7 +57,7 @@ router.get('/providers', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/providers/:provider/sync', async (req: Request, res: Response) => {
+router.post('/providers/:provider/sync', requireRole(['administrator']), async (req, res) => {
   try {
     const { provider: providerSlug } = req.params;
     const providerRecord = await providerRepository.findProviderBySlug(providerSlug.toLowerCase());
@@ -79,7 +80,7 @@ router.post('/providers/:provider/sync', async (req: Request, res: Response) => 
   }
 });
 
-router.post('/providers/:provider/normalize', async (req: Request, res: Response) => {
+router.post('/providers/:provider/normalize', requireRole(['administrator']), async (req, res) => {
   try {
     const { provider } = req.params;
     const result = await normalizeProductsUseCase.execute(provider);
