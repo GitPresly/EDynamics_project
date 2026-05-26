@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { IProvider } from '../../domain/providers/IProvider';
 import { EasyGiftsProvider } from '../../infrastructure/providers/EasyGiftsProvider';
+import { MidoceanProvider } from '../../infrastructure/providers/MidoceanProvider';
 import { HttpClient } from '../../infrastructure/http/httpClient';
 import { createProductRepository, createProviderRepository } from '../../infrastructure/repositories/repositoryFactory';
 import { SyncProviderUseCase } from '../../application/usecases/Provider/SyncProviderUseCase';
@@ -13,44 +14,37 @@ import { GetProvidersResponse } from '../responses/Provider/GetProvidersResponse
 
 const router = Router();
 
-// Initialize dependencies (dependency injection)
 const httpClient = new HttpClient();
 const providerRepository = createProviderRepository();
 const productRepository = createProductRepository();
 const processProductsUseCase = new ProcessProductsUseCase(productRepository);
-const normalizeProductsUseCase = new NormalizeProductsUseCase(productRepository);
+// КОРЕКЦИЯ ТУК: Добавяме providerRepository като втори аргумент
+const normalizeProductsUseCase = new NormalizeProductsUseCase(productRepository, providerRepository);
 const getProvidersUseCase = new GetProvidersUseCase(providerRepository, productRepository);
-import { MidoceanProvider } from '../../infrastructure/providers/MidoceanProvider';
 
-// Factory function to create provider instances
-const createProvider = (providerName: string): IProvider => {
-  const normalizedName = providerName.toLowerCase();
+const createProviderInstance = async (providerSlug: string): Promise<IProvider> => {
+  const providerData = await providerRepository.findProviderBySlug(providerSlug.toLowerCase());
 
-  switch (normalizedName) {
+  if (!providerData) {
+    throw new Error(`Provider ${providerSlug} not found in database`);
+  }
+
+  switch (providerData.slug) {
     case 'easygifts':
-      const apiUrl = process.env.EASYGIFTS_API_URL;
-      if (!apiUrl) {
-        throw new Error('EASYGIFTS_API_URL environment variable is not set');
-      }
-      return new EasyGiftsProvider(httpClient, apiUrl);
+      return new EasyGiftsProvider(httpClient, providerData.api_url);
 
-      case 'midocean':
+    case 'midocean':
       return new MidoceanProvider(
         httpClient, 
-        process.env.MIDOCEAN_API_URL, 
-        process.env.MIDOCEAN_API_KEY
+        providerData.api_url, 
+        providerData.api_key
       );
 
-    // Future providers can be added here
-    // case 'anotherprovider':
-    //   return new AnotherProvider(httpClient, process.env.ANOTHER_PROVIDER_API_URL);
-
     default:
-      throw new Error(`Unknown provider: ${providerName}`);
+      throw new Error(`Unknown provider: ${providerSlug}`);
   }
 };
 
-// Get list of providers
 router.get('/providers', async (req: Request, res: Response) => {
   try {
     const providers = await getProvidersUseCase.execute();
@@ -58,125 +52,45 @@ router.get('/providers', async (req: Request, res: Response) => {
     res.status(200).json(response);
   } catch (error) {
     console.error('Error getting providers:', error);
-
-    if (error instanceof Error) {
-      return res.status(400).json({
-        success: false,
-        error: error.message,
-        message: 'Failed to get providers'
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error',
-      message: 'An unexpected error occurred'
-    });
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
-// Sync provider (Fetch)
 router.post('/providers/:provider/sync', async (req: Request, res: Response) => {
   try {
-    const { provider } = req.params;
+    const { provider: providerSlug } = req.params;
+    const providerRecord = await providerRepository.findProviderBySlug(providerSlug.toLowerCase());
+    
+    if (!providerRecord) throw new Error(`Provider ${providerSlug} not found`);
 
-    // Create provider instance
-    const providerInstance = createProvider(provider);
+    const providerInstance = await createProviderInstance(providerSlug);
 
-    // Create sync use case
     const syncProviderUseCase = new SyncProviderUseCase(
       providerInstance,
+      providerRecord.id,
       providerRepository,
       processProductsUseCase
     );
 
-    // Execute sync
     const result = await syncProviderUseCase.execute();
-
-    // Create response
-    const response = new SyncProviderResponse(
-      {
-        provider: result.provider,
-        sourceFilename: result.sourceFilename,
-        productsCount: result.productsCount,
-        processedCount: result.processedCount,
-        errors: result.errors,
-      },
-      result.success,
-      result.success
-        ? `Successfully synchronized ${result.processedCount} products from ${result.provider}`
-        : `Synchronization completed with ${result.errors.length} error(s)`
-    );
-
-    const statusCode = result.success ? 200 : 207; // 207 Multi-Status for partial success
-    res.status(statusCode).json(response);
+    res.status(result.success ? 200 : 207).json(new SyncProviderResponse(result, result.success));
   } catch (error) {
-    console.error('Error syncing provider:', error);
-
-    if (error instanceof Error) {
-      return res.status(400).json({
-        success: false,
-        error: error.message,
-        message: 'Failed to sync provider'
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error',
-      message: 'An unexpected error occurred during provider sync'
-    });
+    res.status(400).json({ success: false, error: error instanceof Error ? error.message : 'Failed to sync' });
   }
 });
 
-// Normalize products
 router.post('/providers/:provider/normalize', async (req: Request, res: Response) => {
   try {
     const { provider } = req.params;
-
-    // Validate provider parameter
-    if (!provider || provider.trim().length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Provider parameter is required',
-        message: 'Failed to normalize products'
-      });
-    }
-
-    // Execute normalize
     const result = await normalizeProductsUseCase.execute(provider);
-
-    // Create response
-    const response = new NormalizeProductsResponse(
-      {
-        processedCount: result.processedCount,
-        errors: result.errors,
-        provider,
-      },
-      result.errors.length === 0,
-      result.errors.length === 0
-        ? `Successfully normalized ${result.processedCount} products`
-        : `Normalization completed with ${result.errors.length} error(s)`
-    );
-
-    const statusCode = result.errors.length === 0 ? 200 : 207; // 207 Multi-Status for partial success
-    res.status(statusCode).json(response);
+    const response = new NormalizeProductsResponse({
+      processedCount: result.processedCount,
+      errors: result.errors,
+      provider,
+    }, result.errors.length === 0);
+    res.status(result.errors.length === 0 ? 200 : 207).json(response);
   } catch (error) {
-    console.error('Error normalizing products:', error);
-
-    if (error instanceof Error) {
-      return res.status(400).json({
-        success: false,
-        error: error.message,
-        message: 'Failed to normalize products'
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error',
-      message: 'An unexpected error occurred during normalization'
-    });
+    res.status(400).json({ success: false, error: 'Failed to normalize' });
   }
 });
 
