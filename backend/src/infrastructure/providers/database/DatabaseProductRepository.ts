@@ -6,10 +6,16 @@ import { ProductEntity } from '../../../domain/entities/Product/ProductEntity';
 import type { AiStatus, ProductAiStatusRow } from '../interfaces/IProductRepository';
 import { IProductRepository } from '../interfaces/IProductRepository';
 
+/**
+ * Converts a DB datetime value (Date or string) back to ISO string.
+ */
 function toISOString(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
 }
 
+/**
+ * Parses a value that may be a JSON string or already an object.
+ */
 function parseJsonColumn<T = unknown>(value: unknown): T | undefined {
   if (value == null) return undefined;
   if (typeof value === 'object') return value as T;
@@ -90,38 +96,12 @@ export class DatabaseProductRepository implements IProductRepository {
     await databaseClient.query(`DELETE FROM ${this.normalizedTable} WHERE provider_id = ? AND product_id = ?`, [providerId, id]);
   }
 
-  /**
-   * Задача 2: Записване на нормализираните данни в отделни колони
-   */
-  async saveNormalized(providerId: string, id: string, normalizedData: any): Promise<void> {
-    const meta = normalizedData.metadata || {};
-    const pool = databaseClient.getPool();
-    await pool.execute(
-      `INSERT INTO ${this.normalizedTable} (
-        provider_id, product_id, name, price, description, image_url, category, sku, stock, provider, 
-        normalized_name, normalized_description, normalized_category, metadata, events,
-        seo_title, seo_description, quality_score, last_normalized
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        name = VALUES(name), price = VALUES(price), description = VALUES(description),
-        image_url = VALUES(image_url), category = VALUES(category), sku = VALUES(sku),
-        stock = VALUES(stock), provider = VALUES(provider), normalized_name = VALUES(normalized_name),
-        normalized_description = VALUES(normalized_description), normalized_category = VALUES(normalized_category),
-        metadata = VALUES(metadata), events = VALUES(events),
-        seo_title = VALUES(seo_title), seo_description = VALUES(seo_description),
-        quality_score = VALUES(quality_score), last_normalized = VALUES(last_normalized)`,
-      [
-        providerId, id, normalizedData.name ?? null, normalizedData.price ?? null, normalizedData.description ?? null,
-        normalizedData.imageUrl ?? null, normalizedData.category ?? null, normalizedData.sku ?? null,
-        normalizedData.stock ?? null, normalizedData.provider ?? null, normalizedData.normalizedName ?? null,
-        normalizedData.normalizedDescription ?? null, normalizedData.normalizedCategory ?? null,
-        meta ? JSON.stringify(meta) : null, normalizedData.events ?? null,
-        // Новите колони
-        meta.seoTitle ?? null, meta.seoDescription ?? null, meta.qualityScore ?? 0,
-        meta.lastNormalized ? new Date(meta.lastNormalized) : new Date()
-      ],
+  async countByProvider(providerId: string): Promise<number> {
+    const rows = await databaseClient.query<any>(
+      `SELECT COUNT(*) as count FROM ${this.productsTable} WHERE provider_id = ?`,
+      [providerId]
     );
+    return rows[0]?.count || 0;
   }
 
   async deleteNormalized(providerId: string, productId: string): Promise<void> {
@@ -131,11 +111,42 @@ export class DatabaseProductRepository implements IProductRepository {
     );
   }
 
+  async saveNormalized(providerId: string, id: string, normalizedData: any): Promise<void> {
+    const meta = normalizedData.metadata || {};
+    const pool = databaseClient.getPool();
+    await pool.execute(
+      `INSERT INTO ${this.normalizedTable} (
+        provider_id, product_id, name, price, description, image_url, category, sku, stock, provider, 
+        normalized_name, normalized_description, normalized_category, metadata, events, audience, emotions,
+        seo_title, seo_description, quality_score, last_normalized
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        name = VALUES(name), price = VALUES(price), description = VALUES(description),
+        image_url = VALUES(image_url), category = VALUES(category), sku = VALUES(sku),
+        stock = VALUES(stock), provider = VALUES(provider), normalized_name = VALUES(normalized_name),
+        normalized_description = VALUES(normalized_description), normalized_category = VALUES(normalized_category),
+        metadata = VALUES(metadata), events = VALUES(events), audience = VALUES(audience), emotions = VALUES(emotions),
+        seo_title = VALUES(seo_title), seo_description = VALUES(seo_description),
+        quality_score = VALUES(quality_score), last_normalized = VALUES(last_normalized)`,
+      [
+        providerId, id, normalizedData.name ?? null, normalizedData.price ?? null, normalizedData.description ?? null,
+        normalizedData.imageUrl ?? null, normalizedData.category ?? null, normalizedData.sku ?? null,
+        normalizedData.stock ?? null, normalizedData.provider ?? null, normalizedData.normalizedName ?? null,
+        normalizedData.normalizedDescription ?? null, normalizedData.normalizedCategory ?? null,
+        meta ? JSON.stringify(meta) : null, 
+        normalizedData.events ?? null, normalizedData.audience ?? null, normalizedData.emotions ?? null,
+        meta.seoTitle ?? null, meta.seoDescription ?? null, meta.qualityScore ?? 0,
+        meta.lastNormalized ? new Date(meta.lastNormalized) : new Date()
+      ],
+    );
+  }
+
   async findNormalized(providerId: string, id: string): Promise<NormalizedProduct | null> {
     const rows = await databaseClient.query<any>(
       `SELECT product_id AS productId, name, price, description, image_url AS imageUrl, category, sku, stock, provider, 
               normalized_name AS normalizedName, normalized_description AS normalizedDescription, 
-              normalized_category AS normalizedCategory, metadata, events,
+              normalized_category AS normalizedCategory, metadata, events, audience, emotions,
               seo_title, seo_description, quality_score, last_normalized
       FROM ${this.normalizedTable} WHERE provider_id = ? AND product_id = ? LIMIT 1`,
       [providerId, id],
@@ -149,12 +160,12 @@ export class DatabaseProductRepository implements IProductRepository {
       sku: row.sku ?? undefined, stock: row.stock != null ? Number(row.stock) : undefined,
       provider: row.provider ?? undefined, normalizedName: row.normalizedName ?? undefined,
       normalizedDescription: row.normalizedDescription ?? undefined, normalizedCategory: row.normalizedCategory ?? undefined,
+      events: row.events ?? undefined, audience: row.audience ?? undefined, emotions: row.emotions ?? undefined,
       metadata: {
         ...parseJsonColumn(row.metadata),
         seoTitle: row.seo_title, seoDescription: row.seo_description,
         qualityScore: row.quality_score, lastNormalized: row.last_normalized ? toISOString(row.last_normalized) : undefined
       },
-      events: row.events ?? undefined,
     };
   }
 
@@ -166,7 +177,7 @@ export class DatabaseProductRepository implements IProductRepository {
     const rows = await databaseClient.query<any>(
       `SELECT product_id AS productId, provider_id AS providerId, name, price, description, image_url AS imageUrl, category, sku, stock, provider, 
               normalized_name AS normalizedName, normalized_description AS normalizedDescription, 
-              normalized_category AS normalizedCategory, metadata, events,
+              normalized_category AS normalizedCategory, metadata, events, audience, emotions,
               seo_title, seo_description, quality_score, last_normalized
       FROM ${this.normalizedTable} ${whereClause} ORDER BY COALESCE(normalized_name, name) ASC`,
       params,
@@ -179,16 +190,15 @@ export class DatabaseProductRepository implements IProductRepository {
       sku: row.sku ?? undefined, stock: row.stock != null ? Number(row.stock) : undefined,
       provider: row.provider ?? undefined, normalizedName: row.normalizedName ?? undefined,
       normalizedDescription: row.normalizedDescription ?? undefined, normalizedCategory: row.normalizedCategory ?? undefined,
+      events: row.events ?? undefined, audience: row.audience ?? undefined, emotions: row.emotions ?? undefined,
       metadata: {
         ...parseJsonColumn(row.metadata),
         seoTitle: row.seo_title, seoDescription: row.seo_description,
         qualityScore: row.quality_score, lastNormalized: row.last_normalized ? toISOString(row.last_normalized) : undefined
       },
-      events: row.events ?? undefined,
     }));
   }
 
-  // AI Методи (остават непроменени)
   async findByAiStatus(status: AiStatus, providerId?: string, limit: number = 100): Promise<ProductAiStatusRow[]> {
     const params: (string | number)[] = [status];
     let whereClause = 'WHERE ai_status = ?';
@@ -197,13 +207,16 @@ export class DatabaseProductRepository implements IProductRepository {
     const rows = await databaseClient.query<any>(`SELECT id, provider_id AS providerId FROM ${this.productsTable} ${whereClause} ORDER BY updated_at ASC LIMIT ?`, params);
     return rows.map((r: any) => ({ id: r.id, providerId: r.providerId }));
   }
+
   async updateAiStatus(providerId: string, productId: string, status: AiStatus, aiError?: string | null): Promise<void> {
     await databaseClient.query(`UPDATE ${this.productsTable} SET ai_status = ?, ai_updated_at = NOW(6), ai_error = ? WHERE provider_id = ? AND id = ?`, [status, aiError ?? null, providerId, productId]);
   }
+
   async setAiStatusByProvider(providerId: string, status: AiStatus): Promise<number> {
     const [result] = await databaseClient.getPool().execute<ResultSetHeader>(`UPDATE ${this.productsTable} SET ai_status = ?, ai_updated_at = NULL, ai_error = NULL WHERE provider_id = ?`, [status, providerId]);
     return result.affectedRows;
   }
+
   async resetFailedAiStatus(providerId?: string): Promise<number> {
     const pool = databaseClient.getPool();
     const query = providerId ? `UPDATE ${this.productsTable} SET ai_status = 'pending', ai_error = NULL WHERE ai_status = 'failed' AND provider_id = ?` : `UPDATE ${this.productsTable} SET ai_status = 'pending', ai_error = NULL WHERE ai_status = 'failed'`;

@@ -8,9 +8,16 @@ export interface Product {
   sku?: string;
   stock?: number;
   provider?: string;
-  /** Provider key (e.g. easygifts) for API; set when listing/getting from API */
   providerId?: string;
   providerData?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
+
+  normalizedName?: string;
+  normalizedDescription?: string;
+  normalizedCategory?: string;
+  events?: string;
+
+  audience?: string;
+  emotions?: string;
 }

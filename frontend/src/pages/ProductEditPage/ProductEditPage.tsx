@@ -25,6 +25,8 @@ export const ProductEditPage: React.FC = () => {
     normalizedDescription: '',
     normalizedCategory: '',
     events: '',
+    audience: '', // Добавено
+    emotions: '', // Добавено
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -49,7 +51,7 @@ export const ProductEditPage: React.FC = () => {
     setIsLoading(true);
     apiService
       .getProduct(params.providerId, params.id)
-      .then((p) => {
+      .then((p: any) => {
         setProduct(p);
         setForm({
           name: p.name ?? '',
@@ -63,6 +65,8 @@ export const ProductEditPage: React.FC = () => {
           normalizedDescription: p.normalizedDescription ?? '',
           normalizedCategory: p.normalizedCategory ?? '',
           events: p.events ?? '',
+          audience: p.audience ?? '', // Зареждане от базата
+          emotions: p.emotions ?? '', // Зареждане от базата
         });
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Error loading'))
@@ -79,19 +83,27 @@ export const ProductEditPage: React.FC = () => {
     window.location.hash = '#products';
   };
 
-  const handleEnhance = async () => {
+  // Нова универсална функция за AI извличане
+  const handleAiEnrich = async (type: 'events' | 'audience' | 'emotion') => {
     if (!params?.providerId || !params?.id) return;
     setIsEnhancing(true);
     setSaveMessage(null);
     try {
-      const enhanced = await apiService.enhanceProduct(params.providerId, params.id);
-      setProduct(enhanced);
-      setForm((prev) => ({ ...prev, events: enhanced.events ?? '' }));
-      setSaveMessage({ type: 'success', text: 'Events generated. Review and click Save to store them.' });
+      const response = await apiService.enhanceProduct(params.providerId, params.id, type);
+      
+      setForm((prev) => ({ 
+        ...prev, 
+        [type === 'events' ? 'events' : type === 'audience' ? 'audience' : 'emotions']: response.result 
+      }));
+
+      setSaveMessage({ 
+        type: 'success', 
+        text: `AI generated 5 suggestions for ${type}. Review and click Save.` 
+      });
     } catch (err) {
       setSaveMessage({
         type: 'error',
-        text: err instanceof Error ? err.message : 'Enhance failed',
+        text: err instanceof Error ? err.message : 'AI enrichment failed',
       });
     } finally {
       setIsEnhancing(false);
@@ -116,7 +128,9 @@ export const ProductEditPage: React.FC = () => {
         normalizedDescription: form.normalizedDescription.trim() || undefined,
         normalizedCategory: form.normalizedCategory.trim() || undefined,
         events: form.events.trim() || undefined,
-      });
+        audience: form.audience.trim() || undefined,
+        emotions: form.emotions.trim() || undefined,
+      }as any);
       setSaveMessage({ type: 'success', text: 'Product saved successfully.' });
       setProduct(updated);
     } catch (err) {
@@ -162,143 +176,103 @@ export const ProductEditPage: React.FC = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="product-edit-form">
+        {/* Базова информация */}
         <div className="product-edit-field">
           <label htmlFor="name">Name *</label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            value={form.name}
-            onChange={handleChange}
-            required
-            className="product-edit-input"
-          />
+          <input id="name" name="name" type="text" value={form.name} onChange={handleChange} required className="product-edit-input" />
         </div>
         <div className="product-edit-field">
           <label htmlFor="category">Category</label>
-          <input
-            id="category"
-            name="category"
-            type="text"
-            value={form.category}
-            onChange={handleChange}
-            className="product-edit-input"
-          />
+          <input id="category" name="category" type="text" value={form.category} onChange={handleChange} className="product-edit-input" />
         </div>
         <div className="product-edit-field">
           <label htmlFor="sku">Catalog number (SKU)</label>
-          <input
-            id="sku"
-            name="sku"
-            type="text"
-            value={form.sku}
-            onChange={handleChange}
-            className="product-edit-input"
-          />
+          <input id="sku" name="sku" type="text" value={form.sku} onChange={handleChange} className="product-edit-input" />
         </div>
         <div className="product-edit-row">
           <div className="product-edit-field">
             <label htmlFor="price">Price</label>
-            <input
-              id="price"
-              name="price"
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.price}
-              onChange={handleChange}
-              className="product-edit-input"
-            />
+            <input id="price" name="price" type="number" min="0" step="0.01" value={form.price} onChange={handleChange} className="product-edit-input" />
           </div>
           <div className="product-edit-field">
             <label htmlFor="stock">Stock</label>
-            <input
-              id="stock"
-              name="stock"
-              type="number"
-              min="0"
-              step="1"
-              value={form.stock}
-              onChange={handleChange}
-              className="product-edit-input"
-            />
+            <input id="stock" name="stock" type="number" min="0" step="1" value={form.stock} onChange={handleChange} className="product-edit-input" />
           </div>
         </div>
         <div className="product-edit-field">
           <label htmlFor="imageUrl">Image URL</label>
-          <input
-            id="imageUrl"
-            name="imageUrl"
-            type="url"
-            value={form.imageUrl}
-            onChange={handleChange}
-            className="product-edit-input"
-          />
+          <input id="imageUrl" name="imageUrl" type="url" value={form.imageUrl} onChange={handleChange} className="product-edit-input" />
         </div>
         <div className="product-edit-field">
           <label htmlFor="description">Description</label>
-          <textarea
-            id="description"
-            name="description"
-            value={form.description}
-            onChange={handleChange}
-            rows={4}
-            className="product-edit-input product-edit-textarea"
-          />
+          <textarea id="description" name="description" value={form.description} onChange={handleChange} rows={4} className="product-edit-input product-edit-textarea" />
         </div>
 
+        {/* Нормализирана информация */}
         <div className="product-edit-field">
           <label htmlFor="normalizedName">Normalized name</label>
-          <input
-            id="normalizedName"
-            name="normalizedName"
-            type="text"
-            value={form.normalizedName}
-            onChange={handleChange}
-            className="product-edit-input"
-          />
+          <input id="normalizedName" name="normalizedName" type="text" value={form.normalizedName} onChange={handleChange} className="product-edit-input" />
         </div>
         <div className="product-edit-field">
           <label htmlFor="normalizedCategory">Normalized category</label>
-          <input
-            id="normalizedCategory"
-            name="normalizedCategory"
-            type="text"
-            value={form.normalizedCategory}
-            onChange={handleChange}
-            className="product-edit-input"
-          />
+          <input id="normalizedCategory" name="normalizedCategory" type="text" value={form.normalizedCategory} onChange={handleChange} className="product-edit-input" />
         </div>
         <div className="product-edit-field">
           <label htmlFor="normalizedDescription">Normalized description</label>
-          <textarea
-            id="normalizedDescription"
-            name="normalizedDescription"
-            value={form.normalizedDescription}
-            onChange={handleChange}
-            rows={4}
-            className="product-edit-input product-edit-textarea"
-          />
+          <textarea id="normalizedDescription" name="normalizedDescription" value={form.normalizedDescription} onChange={handleChange} rows={4} className="product-edit-input product-edit-textarea" />
         </div>
 
+        {/* AI СЕКЦИЯ */}
+        <h3 className="ai-section-title">AI Marketing Enrichment</h3>
+        
+        {/* EVENTS */}
         <div className="product-edit-field product-edit-enhance-row">
-          <label>Events (merchant gift use)</label>
+          <label>Suitable Events (AI)</label>
           <textarea
             id="events"
             name="events"
             value={form.events}
             onChange={handleChange}
-            rows={5}
-            placeholder="Use “Enhance product” to generate 5 events with AI."
+            rows={3}
+            placeholder="Generate 5 corporate events with AI..."
             className="product-edit-input product-edit-textarea"
           />
-          <button
-            type="button"
-            onClick={handleEnhance}
-            disabled={isEnhancing}
-            className="product-edit-enhance-btn"
-          >
-            {isEnhancing ? 'Enhancing…' : 'Enhance product'}
+          <button type="button" onClick={() => handleAiEnrich('events')} disabled={isEnhancing} className="product-edit-enhance-btn">
+            {isEnhancing ? 'Wait...' : 'Generate Events'}
+          </button>
+        </div>
+
+        {/* AUDIENCE */}
+        <div className="product-edit-field product-edit-enhance-row">
+          <label>Target Audience (AI)</label>
+          <textarea
+            id="audience"
+            name="audience"
+            value={form.audience}
+            onChange={handleChange}
+            rows={3}
+            placeholder="Identify 5 target groups with AI..."
+            className="product-edit-input product-edit-textarea"
+          />
+          <button type="button" onClick={() => handleAiEnrich('audience')} disabled={isEnhancing} className="product-edit-enhance-btn">
+            {isEnhancing ? 'Wait...' : 'Generate Audience'}
+          </button>
+        </div>
+
+        {/* EMOTIONS */}
+        <div className="product-edit-field product-edit-enhance-row">
+          <label>Product Emotions (AI)</label>
+          <textarea
+            id="emotions"
+            name="emotions"
+            value={form.emotions}
+            onChange={handleChange}
+            rows={3}
+            placeholder="List 5 customer emotions with AI..."
+            className="product-edit-input product-edit-textarea"
+          />
+          <button type="button" onClick={() => handleAiEnrich('emotion')} disabled={isEnhancing} className="product-edit-enhance-btn">
+            {isEnhancing ? 'Wait...' : 'Generate Emotions'}
           </button>
         </div>
 

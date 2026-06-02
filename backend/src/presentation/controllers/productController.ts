@@ -30,7 +30,6 @@ function displayCategory(n: { category?: string; normalizedCategory?: string }):
 
 /**
  * GET /api/products
- * Списък с продукти. Достъпен за всички оторизирани потребители.
  */
 router.get('/products', async (req: Request, res: Response) => {
   try {
@@ -66,6 +65,8 @@ router.get('/products', async (req: Request, res: Response) => {
       normalizedDescription: p.normalizedDescription,
       normalizedCategory: p.normalizedCategory,
       events: p.events,
+      audience: p.audience,
+      emotions: p.emotions
     }));
     res.json({ products });
   } catch (error) {
@@ -79,7 +80,6 @@ router.get('/products', async (req: Request, res: Response) => {
 
 /**
  * GET /api/products/:providerId/:id
- * Детайли за един продукт. Достъпен за всички оторизирани потребители.
  */
 router.get('/products/:providerId/:id', async (req: Request, res: Response) => {
   try {
@@ -101,7 +101,6 @@ router.get('/products/:providerId/:id', async (req: Request, res: Response) => {
 
 /**
  * PUT /api/products/:providerId/:id
- * Обновяване на продукт. Само за Administrator и Manager.
  */
 router.put(
   '/products/:providerId/:id', 
@@ -121,6 +120,7 @@ router.put(
 
       const body = req.body as Record<string, unknown>;
       const merged = {
+        ...existing,
         name: body.name !== undefined ? body.name : existing.name,
         price: body.price !== undefined ? body.price : existing.price,
         description: body.description !== undefined ? body.description : existing.description,
@@ -134,6 +134,8 @@ router.put(
         normalizedCategory: body.normalizedCategory !== undefined ? body.normalizedCategory : existing.normalizedCategory,
         metadata: body.metadata !== undefined ? body.metadata : existing.metadata,
         events: body.events !== undefined ? body.events : existing.events,
+        audience: body.audience !== undefined ? body.audience : existing.audience,
+        emotions: body.emotions !== undefined ? body.emotions : existing.emotions,
       };
 
       await productRepository.saveNormalized(providerId, id, merged);
@@ -150,7 +152,6 @@ router.put(
 
 /**
  * DELETE /api/products/:providerId/:id
- * ИЗТРИВАНЕ на нормализиран продукт. САМО за Administrator.
  */
 router.delete(
   '/products/:providerId/:id', 
@@ -182,40 +183,35 @@ router.delete(
 
 /**
  * POST /api/products/:providerId/:id/enhance
- * AI подобрение. Само за Administrator и Manager.
+ * Changed from /ai-enrich to /enhance to match frontend api.ts
  */
 router.post(
   '/products/:providerId/:id/enhance', 
   requireRole(['administrator', 'manager']), 
   async (req: Request, res: Response) => {
-    try {
-      const providerId = (req.params.providerId ?? '').trim();
-      const id = (req.params.id ?? '').trim();
-      if (!providerId || !id) {
-        return res.status(400).json({ error: 'providerId and id are required' });
-      }
+  try {
+    const { providerId, id } = req.params;
+    const { type } = req.body; // 'events' | 'audience' | 'emotion'
 
-      const result = await enhanceProductUseCase.execute({ providerId, productId: id });
-      res.json({
-        ...result.product,
-        providerId,
-        events: result.events,
-      });
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.message.includes('Product not found')) {
-          return res.status(404).json({ error: error.message });
-        }
-        if (error.message.includes('DEEP_INFRA_KEY')) {
-          return res.status(503).json({ error: error.message });
-        }
-      }
-      console.error('Error enhancing product:', error);
-      res.status(500).json({
-        error: 'Failed to enhance product',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      });
+    if (!type || !['events', 'audience', 'emotion'].includes(type)) {
+      return res.status(400).json({ success: false, error: 'Invalid enrichment type' });
     }
+
+    const result = await enhanceProductUseCase.execute({ 
+      providerId, 
+      productId: id, 
+      type 
+    });
+
+    // Wrapped in "data" property to match frontend apiService.request parsing logic
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error: any) {
+    console.error('AI Enhancement error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 export { router as productRouter };

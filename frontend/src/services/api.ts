@@ -159,25 +159,37 @@ class ApiService {
   }
 
   async updateProduct(
-    providerId: string,
-    id: string,
-    data: Partial<Pick<Product, 'name' | 'price' | 'description' | 'imageUrl' | 'category' | 'sku' | 'stock' | 'normalizedName' | 'normalizedDescription' | 'normalizedCategory' | 'events'>>
-  ): Promise<Product> {
-    const product = await this.request<Product>(
-      `/products/${encodeURIComponent(providerId)}/${encodeURIComponent(id)}`,
-      { method: 'PUT', body: JSON.stringify(data) }
-    ) as unknown as Product;
-    return { ...product, providerId };
-  }
+  providerId: string,
+  id: string,
+  data: Partial<Product> // По-лесен начин: приемаме частичен Product обект
+): Promise<Product> {
+  const product = await this.request<Product>(
+    `/products/${encodeURIComponent(providerId)}/${encodeURIComponent(id)}`,
+    { 
+      method: 'PUT', 
+      body: JSON.stringify(data) 
+    }
+  ) as unknown as Product;
+  
+  return { ...product, providerId };
+}
 
   /** Call AI to generate "5 events for merchant gift". Returns enhanced data only; does not save. */
-  async enhanceProduct(providerId: string, id: string): Promise<Product> {
-    const product = await this.request<Product>(
-      `/products/${encodeURIComponent(providerId)}/${encodeURIComponent(id)}/enhance`,
-      { method: 'POST' }
-    ) as unknown as Product;
-    return { ...product, providerId };
+  async enhanceProduct(providerId: string, id: string, type: 'events' | 'audience' | 'emotion'): Promise<{ type: string; result: string }> {
+  const response = await this.request<{ type: string; result: string }>(
+    `/products/${encodeURIComponent(providerId)}/${encodeURIComponent(id)}/enhance`,
+    { 
+      method: 'POST',
+      body: JSON.stringify({ type }) // Пращаме типа към бекенда
+    }
+  );
+
+  if (!response.data) {
+    throw new Error('No data received from AI');
   }
+
+  return response.data;
+}
 
   // Users (admin only)
   async getUsers(): Promise<User[]> {
