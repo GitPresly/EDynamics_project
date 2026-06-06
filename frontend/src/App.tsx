@@ -10,11 +10,12 @@ import { ProductEditPage } from './pages/ProductEditPage/ProductEditPage';
 import { UsersPage } from './pages/UsersPage/UsersPage';
 import { JobsPage } from './pages/JobsPage/JobsPage';
 import { ProfilePage } from './pages/ProfilePage/ProfilePage';
+import { QualityIssuesPage } from './pages/QualityIssuesPage/QualityIssuesPage';
 import './App.css';
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const [currentPage, setCurrentPage] = useState<'home' | 'submissions' | 'providers' | 'products' | 'product-edit' | 'users' | 'jobs' | 'profile'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'submissions' | 'providers' | 'products' | 'product-edit' | 'users' | 'jobs' | 'profile' | 'quality-issues'>('home');
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -30,6 +31,11 @@ function AppContent() {
         setCurrentPage('home');
         return;
       }
+      if (hash === '#quality-issues' && role === 'operator') {
+        window.location.hash = '#';
+        setCurrentPage('home');
+        return;
+      }
       if (hash === '#providers' && role === 'operator') {
         window.location.hash = '#';
         setCurrentPage('home');
@@ -41,6 +47,7 @@ function AppContent() {
       else if (hash.startsWith('#products/edit/')) setCurrentPage('product-edit');
       else if (hash === '#users') setCurrentPage('users');
       else if (hash === '#jobs') setCurrentPage('jobs');
+      else if (hash === '#quality-issues') setCurrentPage('quality-issues');
       else if (hash === '#profile') setCurrentPage('profile');
       else if (hash.startsWith('#edit/')) setCurrentPage('home');
       else setCurrentPage('home');
@@ -71,6 +78,7 @@ function AppContent() {
       {currentPage === 'product-edit' && <ProductEditPage />}
       {currentPage === 'users' && <UsersPage />}
       {currentPage === 'jobs' && <JobsPage />}
+      {currentPage === 'quality-issues' && <QualityIssuesPage />}
       {currentPage === 'profile' && <ProfilePage />}
     </Layout>
   );

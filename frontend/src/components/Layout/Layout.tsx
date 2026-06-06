@@ -9,7 +9,7 @@ interface LayoutProps {
 }
 
 // ... canAccess функцията си остава същата ...
-function canAccess(role: UserRole, menu: 'home' | 'submissions' | 'providers' | 'products' | 'users' | 'jobs' | 'profile'): boolean {
+function canAccess(role: UserRole, menu: 'home' | 'submissions' | 'providers' | 'products' | 'users' | 'jobs' | 'profile' | 'quality-issues'): boolean {
   if (menu === 'profile') return true;
   switch (role) {
     case 'administrator': return true;
@@ -57,7 +57,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     return currentHash === hash;
   };
 
-  const nav = (hash: string, label: string, menu: 'home' | 'submissions' | 'providers' | 'products' | 'users' | 'jobs' | 'profile') => {
+  const nav = (hash: string, label: string, menu: 'home' | 'submissions' | 'providers' | 'products' | 'users' | 'jobs' | 'profile' | 'quality-issues') => {
     if (!canAccess(role, menu)) return null;
     return (
       <a
@@ -128,6 +128,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           {nav('#products', 'Products', 'products')}
           {nav('#users', 'Users', 'users')}
           {nav('#jobs', 'Pipeline Jobs', 'jobs')}
+          {nav('#quality-issues', 'Products with Issues', 'quality-issues')}
         </nav>
       </header>
       <main className="layout-main">{children}</main>

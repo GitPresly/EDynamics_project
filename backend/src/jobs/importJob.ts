@@ -4,6 +4,7 @@ import { ProcessProductsUseCase } from '../application/usecases/Provider/Process
 import { GetProvidersUseCase } from '../application/usecases/Provider/GetProvidersUseCase';
 import { createProductRepository, createProviderRepository } from '../infrastructure/repositories/repositoryFactory';
 import { EasyGiftsProvider } from '../infrastructure/providers/EasyGiftsProvider';
+import { MidoceanProvider } from '../infrastructure/providers/MidoceanProvider';
 import { runJob } from './jobRunner';
 import type { JobContext } from './jobRunner';
 import { HttpClient } from '../infrastructure/http/httpClient';
@@ -22,6 +23,13 @@ function createProvider(providerName: string): IProvider {
       const apiUrl = process.env.EASYGIFTS_API_URL;
       if (!apiUrl) throw new Error('EASYGIFTS_API_URL is not set');
       return new EasyGiftsProvider(httpClient, apiUrl);
+    }
+    case 'midocean': {
+      const apiUrl = process.env.MIDOCEAN_API_URL;
+      const apiKey = process.env.MIDOCEAN_API_KEY;
+      if (!apiUrl) throw new Error('MIDOCEAN_API_URL is not set');
+      if (!apiKey) throw new Error('MIDOCEAN_API_KEY is not set');
+      return new MidoceanProvider(httpClient, apiUrl, apiKey);
     }
     default:
       throw new Error(`Unknown provider: ${providerName}`);
@@ -51,14 +59,13 @@ export async function runImportJob(options: RunImportJobOptions = {}): Promise<{
     jobName: 'import',
     providerId: providerId ?? null,
     jobFn: async (ctx: JobContext): Promise<{ processedCount: number; successCount: number; failedCount: number }> => {
-      const providersToSync: string[] = [];
-      if (providerId) {
-        providersToSync.push(providerId);
-      } else {
-        const providers = await getProvidersUseCase.execute();
-        const configured = providers.filter((p) => p.isConfigured).map((p) => p.name);
-        providersToSync.push(...configured);
-      }
+      // Always fetch all providers from DB so we have both slug and numeric ID
+      const allProviders = await getProvidersUseCase.execute();
+      const providersToSync = allProviders.filter((p) => {
+        if (!p.isConfigured) return false;
+        if (providerId) return p.name === providerId;
+        return true;
+      }).map((p) => ({ slug: p.name, dbId: p.id }));
 
       if (providersToSync.length === 0) {
         await ctx.updateCounts(0, 0, 0);
@@ -69,11 +76,12 @@ export async function runImportJob(options: RunImportJobOptions = {}): Promise<{
       let totalSuccess = 0;
       let totalFailed = 0;
 
-      for (const providerKey of providersToSync) {
+      for (const { slug: providerKey, dbId: dbProviderId } of providersToSync) {
         logJob({ job_name: 'import', provider_id: providerKey, message: 'sync provider started' });
-        const provider = await createProvider(providerKey);
+        const provider = createProvider(providerKey);
         const syncUseCase = new SyncProviderUseCase(
           provider,
+          dbProviderId,
           providerRepository,
           processProductsUseCase,
         );
@@ -83,8 +91,7 @@ export async function runImportJob(options: RunImportJobOptions = {}): Promise<{
         totalFailed += result.errors.length;
 
         if (result.processedCount > 0) {
-          const pid = providerKey.toLowerCase();
-          await productRepository.setAiStatusByProvider(pid, 'pending');
+          await productRepository.setAiStatusByProvider(dbProviderId.toString(), 'pending');
         }
         logJob({
           job_name: 'import',

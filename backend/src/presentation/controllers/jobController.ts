@@ -5,8 +5,10 @@ import { ListPipelineRunsUseCase } from '../../application/usecases/Job/ListPipe
 import { GetPipelineRunByIdUseCase } from '../../application/usecases/Job/GetPipelineRunByIdUseCase';
 import { TriggerImportJobUseCase } from '../../application/usecases/Job/TriggerImportJobUseCase';
 import { TriggerEnrichJobUseCase } from '../../application/usecases/Job/TriggerEnrichJobUseCase';
+import { TriggerDataQualityJobUseCase } from '../../application/usecases/Job/TriggerDataQualityJobUseCase';
 import { ListFailedProductsUseCase } from '../../application/usecases/Job/ListFailedProductsUseCase';
 import { RetryFailedProductsUseCase } from '../../application/usecases/Job/RetryFailedProductsUseCase';
+import { ListQualityIssuesProductsUseCase } from '../../application/usecases/Job/ListQualityIssuesProductsUseCase';
 import type { PipelineRun } from '../../domain/entities/PipelineRun/PipelineRun';
 import type { PipelineRunStatus } from '../../domain/entities/PipelineRun/PipelineRun';
 
@@ -18,8 +20,10 @@ const listPipelineRunsUseCase = new ListPipelineRunsUseCase(pipelineRunRepositor
 const getPipelineRunByIdUseCase = new GetPipelineRunByIdUseCase(pipelineRunRepository);
 const triggerImportJobUseCase = new TriggerImportJobUseCase();
 const triggerEnrichJobUseCase = new TriggerEnrichJobUseCase();
+const triggerDataQualityJobUseCase = new TriggerDataQualityJobUseCase();
 const listFailedProductsUseCase = new ListFailedProductsUseCase(productRepository);
 const retryFailedProductsUseCase = new RetryFailedProductsUseCase(productRepository);
+const listQualityIssuesProductsUseCase = new ListQualityIssuesProductsUseCase();
 
 function toRunDto(run: PipelineRun) {
   return {
@@ -94,6 +98,41 @@ router.get('/', async (req: Request, res: Response) => {
     res.status(200).json({ success: true, data: runs.map(toRunDto) });
   } catch (error) {
     console.error('Error listing jobs:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// POST /api/admin/jobs/quality
+router.post('/quality', async (req: Request, res: Response) => {
+  try {
+    const providerId = req.body?.providerId as string | undefined;
+    const batchSize = req.body?.batchSize as number | undefined;
+    const outcome = await triggerDataQualityJobUseCase.execute({ providerId, batchSize });
+    const statusCode = outcome.status === 'success' ? 200 : 207;
+    res.status(statusCode).json({
+      success: outcome.status === 'success',
+      runId: outcome.runId,
+      status: outcome.status,
+      processedCount: outcome.processedCount,
+      successCount: outcome.successCount,
+      failedCount: outcome.failedCount,
+      error: outcome.error,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(400).json({ success: false, error: message });
+  }
+});
+
+// GET /api/admin/jobs/quality-issues (must be before /:id)
+router.get('/quality-issues', async (req: Request, res: Response) => {
+  try {
+    const providerId = req.query.provider_id as string | undefined;
+    const limit = req.query.limit != null ? parseInt(String(req.query.limit), 10) : undefined;
+    const rows = await listQualityIssuesProductsUseCase.execute({ providerId, limit });
+    res.status(200).json({ success: true, data: rows });
+  } catch (error) {
+    console.error('Error listing quality issues:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });

@@ -266,6 +266,23 @@ class ApiService {
     return { resetCount: response.resetCount ?? 0 };
   }
 
+  async triggerDataQualityJob(options?: { providerId?: string; batchSize?: number }): Promise<JobTriggerResponse> {
+    return this.request<JobTriggerResponse>('/admin/jobs/quality', {
+      method: 'POST',
+      body: JSON.stringify(options ?? {}),
+    }) as Promise<JobTriggerResponse>;
+  }
+
+  async getQualityIssuesProducts(params?: { providerId?: string; limit?: number }): Promise<QualityIssueProduct[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.providerId) searchParams.set('provider_id', params.providerId);
+    if (params?.limit != null) searchParams.set('limit', String(params.limit));
+    const query = searchParams.toString();
+    const url = query ? `/admin/jobs/quality-issues?${query}` : '/admin/jobs/quality-issues';
+    const response = (await this.request<QualityIssueProduct[]>(url, { method: 'GET' })) as unknown as { data: QualityIssueProduct[] };
+    return response.data ?? [];
+  }
+
   async refreshToken(): Promise<string> {
   const response = await this.request<{ token: string }>('/auth/refresh-token', {
     method: 'POST',
@@ -306,6 +323,22 @@ export interface JobTriggerResponse {
 export interface FailedProductRow {
   id: string;
   providerId: string;
+}
+
+export interface QualityIssue {
+  rule: string;
+  message: string;
+}
+
+export interface QualityIssueProduct {
+  id: string;
+  providerId: string;
+  name: string | null;
+  price: number | null;
+  category: string | null;
+  qualityStatus: string;
+  qualityIssues: QualityIssue[];
+  updatedAt: string;
 }
 
 export const apiService = new ApiService();

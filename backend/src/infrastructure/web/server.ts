@@ -77,10 +77,12 @@ export function createServer(): Express {
   console.log('  POST /api/users (admin only)');
   console.log('  POST /api/admin/jobs/import (admin only)');
   console.log('  POST /api/admin/jobs/enrich (admin only)');
+  console.log('  POST /api/admin/jobs/quality (admin only)');
   console.log('  GET /api/admin/jobs (admin only)');
   console.log('  GET /api/admin/jobs/:id (admin only)');
   console.log('  GET /api/admin/jobs/failed-products (admin only)');
   console.log('  POST /api/admin/jobs/retry-failed (admin only)');
+  console.log('  GET /api/admin/jobs/quality-issues (admin only)');
 
   return app;
 }
