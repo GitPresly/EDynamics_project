@@ -22,18 +22,6 @@ export const SubmissionsPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this submission?')) return;
-    
-    try {
-      await apiService.deleteSubmission(id);
-      // Refresh the list locally
-      setSubmissions(prev => prev.filter(s => s.id !== id));
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete');
-    }
-  };
-
   useEffect(() => {
     fetchSubmissions();
   }, []);
@@ -53,6 +41,15 @@ export const SubmissionsPage: React.FC = () => {
   const handleEdit = (submission: Submission) => {
     // Navigate to home page with edit hash
     window.location.hash = `#edit/${submission.id}`;
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await apiService.deleteSubmission(id);
+      setSubmissions((prev) => prev.filter((s) => s.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete submission');
+    }
   };
 
   if (isLoading) {
@@ -102,7 +99,7 @@ export const SubmissionsPage: React.FC = () => {
               key={submission.id}
               submission={submission}
               onEdit={handleEdit}
-              onDelete={() => handleDelete(submission.id)}
+              onDelete={handleDelete}
             />
           ))}
         </div>

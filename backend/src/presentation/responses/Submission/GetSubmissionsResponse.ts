@@ -1,4 +1,4 @@
-import { Submission } from '../../../domain/entities/Submission/Submission';
+import { Submission, SubmissionStatus } from '../../../domain/entities/Submission/Submission';
 import { Response } from '../Response';
 
 export class GetSubmissionsResponse extends Response {
@@ -7,9 +7,9 @@ export class GetSubmissionsResponse extends Response {
     name: string;
     email: string;
     message: string;
-    city: string;    // Added
-    country: string; // Added
-    status: string;  // Added
+    city: string | null;
+    country: string | null;
+    status: SubmissionStatus;
     createdAt: string;
   }>;
   count: number;
@@ -20,9 +20,9 @@ export class GetSubmissionsResponse extends Response {
       name: s.name,
       email: s.email,
       message: s.message,
-      city: s.city || '',         // Mapping new field
-      country: s.country || '',   // Mapping new field
-      status: s.status || 'Open', // Mapping new field
+      city: s.city ?? null,
+      country: s.country ?? null,
+      status: s.status,
       createdAt: s.createdAt,
     }));
     super(success, mappedData, 'Submissions retrieved successfully');

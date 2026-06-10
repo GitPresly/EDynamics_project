@@ -1,0 +1,113 @@
+import { IProvider } from '../domain/providers/IProvider';
+import { SyncProviderUseCase } from '../application/usecases/Provider/SyncProviderUseCase';
+import { ProcessProductsUseCase } from '../application/usecases/Provider/ProcessProductsUseCase';
+import { GetProvidersUseCase } from '../application/usecases/Provider/GetProvidersUseCase';
+import { createProductRepository, createProviderRepository } from '../infrastructure/repositories/repositoryFactory';
+import { EasyGiftsProvider } from '../infrastructure/providers/EasyGiftsProvider';
+import { MidoceanProvider } from '../infrastructure/providers/MidoceanProvider';
+import { runJob } from './jobRunner';
+import type { JobContext } from './jobRunner';
+import { HttpClient } from '../infrastructure/http/httpClient';
+import { logJob } from '../infrastructure/logging/jobLogger';
+
+const httpClient = new HttpClient();
+const productRepository = createProductRepository();
+const providerRepository = createProviderRepository();
+const processProductsUseCase = new ProcessProductsUseCase(productRepository);
+const getProvidersUseCase = new GetProvidersUseCase(providerRepository, productRepository);
+
+function createProvider(providerName: string): IProvider {
+  const normalizedName = providerName.toLowerCase();
+  switch (normalizedName) {
+    case 'easygifts': {
+      const apiUrl = process.env.EASYGIFTS_API_URL;
+      if (!apiUrl) throw new Error('EASYGIFTS_API_URL is not set');
+      return new EasyGiftsProvider(httpClient, apiUrl);
+    }
+    case 'midocean': {
+      const apiUrl = process.env.MIDOCEAN_API_URL;
+      const apiKey = process.env.MIDOCEAN_API_KEY;
+      if (!apiUrl) throw new Error('MIDOCEAN_API_URL is not set');
+      if (!apiKey) throw new Error('MIDOCEAN_API_KEY is not set');
+      return new MidoceanProvider(httpClient, apiUrl, apiKey);
+    }
+    default:
+      throw new Error(`Unknown provider: ${providerName}`);
+  }
+}
+
+export interface RunImportJobOptions {
+  providerId?: string;
+}
+
+/**
+ * Run supplier import job: fetch products, upsert to DB, mark ai_status = 'pending'.
+ * If providerId is set, sync only that provider; otherwise sync all configured providers.
+ * Idempotent (upsert).
+ */
+export async function runImportJob(options: RunImportJobOptions = {}): Promise<{
+  runId: number;
+  status: 'success' | 'failed';
+  processedCount: number;
+  successCount: number;
+  failedCount: number;
+  error?: string;
+}> {
+  const { providerId } = options;
+
+  return runJob({
+    jobName: 'import',
+    providerId: providerId ?? null,
+    jobFn: async (ctx: JobContext): Promise<{ processedCount: number; successCount: number; failedCount: number }> => {
+      // Always fetch all providers from DB so we have both slug and numeric ID
+      const allProviders = await getProvidersUseCase.execute();
+      const providersToSync = allProviders.filter((p) => {
+        if (!p.isConfigured) return false;
+        if (providerId) return p.name === providerId;
+        return true;
+      }).map((p) => ({ slug: p.name, dbId: p.id }));
+
+      if (providersToSync.length === 0) {
+        await ctx.updateCounts(0, 0, 0);
+        return { processedCount: 0, successCount: 0, failedCount: 0 };
+      }
+
+      let totalProcessed = 0;
+      let totalSuccess = 0;
+      let totalFailed = 0;
+
+      for (const { slug: providerKey, dbId: dbProviderId } of providersToSync) {
+        logJob({ job_name: 'import', provider_id: providerKey, message: 'sync provider started' });
+        const provider = createProvider(providerKey);
+        const syncUseCase = new SyncProviderUseCase(
+          provider,
+          dbProviderId,
+          providerRepository,
+          processProductsUseCase,
+        );
+        const result = await syncUseCase.execute();
+        totalProcessed += result.processedCount + result.errors.length;
+        totalSuccess += result.processedCount;
+        totalFailed += result.errors.length;
+
+        if (result.processedCount > 0) {
+          await productRepository.setAiStatusByProvider(dbProviderId.toString(), 'pending');
+        }
+        logJob({
+          job_name: 'import',
+          provider_id: providerKey,
+          message: 'sync provider finished',
+          processed_count: result.processedCount,
+          errors_count: result.errors.length,
+        });
+      }
+
+      await ctx.updateCounts(totalProcessed, totalSuccess, totalFailed);
+      return {
+        processedCount: totalProcessed,
+        successCount: totalSuccess,
+        failedCount: totalFailed,
+      };
+    },
+  });
+}

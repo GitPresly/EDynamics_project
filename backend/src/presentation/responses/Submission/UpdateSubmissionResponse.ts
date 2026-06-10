@@ -1,4 +1,4 @@
-import { Submission } from '../../../domain/entities/Submission/Submission';
+import { Submission, SubmissionStatus } from '../../../domain/entities/Submission/Submission';
 import { Response } from '../Response';
 
 export class UpdateSubmissionResponse extends Response {
@@ -6,9 +6,9 @@ export class UpdateSubmissionResponse extends Response {
   name: string;
   email: string;
   message: string;
-  city: string;    // Added
-  country: string; // Added
-  status: string;  // Added
+  city: string | null;
+  country: string | null;
+  status: SubmissionStatus;
   createdAt: string;
 
   constructor(
@@ -21,9 +21,9 @@ export class UpdateSubmissionResponse extends Response {
     this.name = submission.name;
     this.email = submission.email;
     this.message = submission.message;
-    this.city = submission.city || '';       // Mapping new field
-    this.country = submission.country || ''; // Mapping new field
-    this.status = submission.status || 'Open'; // Mapping new field
+    this.city = submission.city ?? null;
+    this.country = submission.country ?? null;
+    this.status = submission.status;
     this.createdAt = submission.createdAt;
   }
 }

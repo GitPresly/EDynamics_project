@@ -5,9 +5,9 @@ export interface Submission {
   name: string;
   email: string;
   message: string;
-  createdAt: string;
-  deletedAt?: string;
-  city: string;   
-  country: string;
+  city?: string | null;
+  country?: string | null;
   status: SubmissionStatus;
+  createdAt: string;
+  deletedAt?: string | null;
 }

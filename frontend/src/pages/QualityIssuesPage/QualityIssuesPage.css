@@ -1,0 +1,169 @@
+.qi-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.qi-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.qi-header h1 {
+  font-size: 1.75rem;
+  color: #333;
+  margin: 0;
+}
+
+.qi-btn-refresh {
+  padding: 0.45rem 1rem;
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.qi-btn-refresh:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.qi-btn-refresh:hover:not(:disabled) {
+  background: #1565c0;
+}
+
+.qi-error {
+  padding: 0.75rem;
+  background: #fee;
+  color: #c33;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.qi-summary {
+  margin: 0 0 1rem 0;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.qi-loading {
+  color: #666;
+}
+
+.qi-table-wrap {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  overflow: auto;
+}
+
+.qi-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.qi-table th,
+.qi-table td {
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.qi-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #444;
+  white-space: nowrap;
+}
+
+.qi-row:hover {
+  background: #fafafa;
+}
+
+.qi-id-cell {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  color: #666;
+}
+
+.qi-missing {
+  color: #bbb;
+}
+
+.qi-issue-count {
+  display: inline-block;
+  background: #c62828;
+  color: white;
+  border-radius: 12px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-width: 22px;
+  text-align: center;
+}
+
+.qi-date {
+  font-size: 0.82rem;
+  color: #777;
+  white-space: nowrap;
+}
+
+.qi-btn-toggle {
+  padding: 0.3rem 0.7rem;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #444;
+}
+
+.qi-btn-toggle:hover {
+  background: #eee;
+}
+
+.qi-details-row td {
+  background: #fffbf0;
+  border-bottom: 2px solid #f0e8c0;
+  padding: 0.75rem 1rem;
+}
+
+.qi-issues-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.qi-issue-item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.qi-issue-rule {
+  font-family: monospace;
+  font-size: 0.82rem;
+  background: #f0f0f0;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  color: #c62828;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.qi-issue-msg {
+  font-size: 0.88rem;
+  color: #555;
+}

@@ -1,8 +1,8 @@
 import { GetSubmissionsResponse } from '../../../presentation/responses/Submission/GetSubmissionsResponse';
-import { ISubmissionRepository } from '../../../infrastructure/fileSystem/fileRepository';
+import { ISubmissionRepository } from '../../../infrastructure/submissions/interfaces/ISubmissionRepository';
 
 export class GetAllSubmissionsUseCase {
-  constructor(private repository: ISubmissionRepository) {}
+  constructor(private repository: ISubmissionRepository) { }
 
   async execute(): Promise<GetSubmissionsResponse> {
     const submissions = await this.repository.findAll();

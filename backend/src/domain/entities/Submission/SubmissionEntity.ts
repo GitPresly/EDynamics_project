@@ -7,14 +7,14 @@ export class SubmissionEntity {
     public readonly name: string,
     public readonly email: string,
     public readonly message: string,
-    public readonly city: string,
-    public readonly country: string,
+    public readonly city: string | null,
+    public readonly country: string | null,
     public readonly status: SubmissionStatus,
     public readonly createdAt: string,
-    public readonly deletedAt?: string
+    public readonly deletedAt: string | null = null
   ) { }
 
-  static create(request: CreateSubmissionRequest & { city?: string; country?: string }): SubmissionEntity {
+  static create(request: CreateSubmissionRequest): SubmissionEntity {
     // Validation
     if (!request.name || request.name.trim().length === 0) {
       throw new Error('Name is required');
@@ -43,10 +43,11 @@ export class SubmissionEntity {
       request.name.trim(),
       request.email.trim().toLowerCase(),
       request.message.trim(),
-      (request.city || '').trim(),
-      (request.country || '').trim(),
-      'Open', // Default status for new submissions
-      createdAt
+      request.city ? request.city.trim() : null,
+      request.country ? request.country.trim() : null,
+      'Open',
+      createdAt,
+      null
     );
   }
 
@@ -56,25 +57,11 @@ export class SubmissionEntity {
       data.name,
       data.email,
       data.message,
-      data.city,
-      data.country,
-      data.status,
+      data.city ?? null,
+      data.country ?? null,
+      data.status ?? 'Open',
       data.createdAt,
-      data.deletedAt
-    );
-  }
-
-  softDelete(): SubmissionEntity {
-    return new SubmissionEntity(
-      this.id,
-      this.name,
-      this.email,
-      this.message,
-      this.city,
-      this.country,
-      this.status,
-      this.createdAt,
-      new Date().toISOString() // Set deletion date and hour
+      data.deletedAt ?? null
     );
   }
 
