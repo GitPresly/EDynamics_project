@@ -116,6 +116,49 @@
   white-space: nowrap;
 }
 
+.submission-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.submission-location {
+  color: #777;
+  font-size: 0.85rem;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-open {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.status-in-review {
+  background: #fff8e1;
+  color: #f9a825;
+}
+
+.status-approved {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-declined {
+  background: #fdecea;
+  color: #c62828;
+}
+
 .submission-message {
   color: #555;
   line-height: 1.6;
@@ -145,4 +188,19 @@
 
 .edit-button:hover {
   background: #218838;
+}
+
+.delete-button {
+  padding: 0.5rem 1rem;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.delete-button:hover {
+  background: #c0392b;
 }

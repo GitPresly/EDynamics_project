@@ -6,5 +6,8 @@ export type CreateSubmissionResponse = Response<Submission> & {
   name: string;
   email: string;
   message: string;
+  city: string | null;
+  country: string | null;
+  status: Submission['status'];
   createdAt: string;
 };

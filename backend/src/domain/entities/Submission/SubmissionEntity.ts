@@ -1,4 +1,4 @@
-import { Submission } from './Submission';
+import { Submission, SubmissionStatus } from './Submission';
 import { CreateSubmissionRequest } from '../../../presentation/requests/Submission/CreateSubmissionRequest';
 
 export class SubmissionEntity {
@@ -7,7 +7,11 @@ export class SubmissionEntity {
     public readonly name: string,
     public readonly email: string,
     public readonly message: string,
-    public readonly createdAt: string
+    public readonly city: string | null,
+    public readonly country: string | null,
+    public readonly status: SubmissionStatus,
+    public readonly createdAt: string,
+    public readonly deletedAt: string | null = null
   ) { }
 
   static create(request: CreateSubmissionRequest): SubmissionEntity {
@@ -39,7 +43,11 @@ export class SubmissionEntity {
       request.name.trim(),
       request.email.trim().toLowerCase(),
       request.message.trim(),
-      createdAt
+      request.city ? request.city.trim() : null,
+      request.country ? request.country.trim() : null,
+      'Open',
+      createdAt,
+      null
     );
   }
 
@@ -49,7 +57,11 @@ export class SubmissionEntity {
       data.name,
       data.email,
       data.message,
-      data.createdAt
+      data.city ?? null,
+      data.country ?? null,
+      data.status ?? 'Open',
+      data.createdAt,
+      data.deletedAt ?? null
     );
   }
 
@@ -59,7 +71,11 @@ export class SubmissionEntity {
       name: this.name,
       email: this.email,
       message: this.message,
+      city: this.city,
+      country: this.country,
+      status: this.status,
       createdAt: this.createdAt,
+      deletedAt: this.deletedAt,
     };
   }
 

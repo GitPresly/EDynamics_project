@@ -3,14 +3,17 @@ import { UpdateSubmissionUseCase } from '../../../../../src/application/usecases
 import type { ISubmissionRepository } from '../../../../../src/infrastructure/submissions/interfaces/ISubmissionRepository';
 import type { Submission } from '../../../../../src/domain/entities/Submission/Submission';
 
-const mockFindAll = vi.fn();
-const mockSaveAll = vi.fn();
+const mockFindById = vi.fn();
+const mockUpdate = vi.fn();
 
 const mockRepo: ISubmissionRepository = {
   save: vi.fn(),
-  findAll: mockFindAll,
-  findById: vi.fn(),
-  saveAll: mockSaveAll,
+  findAll: vi.fn(),
+  findById: mockFindById,
+  findByEmail: vi.fn(),
+  update: mockUpdate,
+  deleteById: vi.fn(),
+  saveAll: vi.fn(),
 };
 
 beforeEach(() => {
@@ -22,13 +25,19 @@ const existing: Submission = {
   name: 'Old Name',
   email: 'old@example.com',
   message: 'Old message',
+  status: 'Open',
   createdAt: '2024-01-01T10:00:00.000Z',
 };
 
 describe('UpdateSubmissionUseCase', () => {
   it('updates name, email and message while preserving id and createdAt', async () => {
-    mockFindAll.mockResolvedValue([{ ...existing }]);
-    mockSaveAll.mockResolvedValue(undefined);
+    mockFindById.mockResolvedValue({ ...existing });
+    mockUpdate.mockResolvedValue({
+      ...existing,
+      name: 'New Name',
+      email: 'new@example.com',
+      message: 'New message',
+    });
     const useCase = new UpdateSubmissionUseCase(mockRepo);
 
     const result = await useCase.execute('sub-1', {
@@ -44,9 +53,14 @@ describe('UpdateSubmissionUseCase', () => {
     expect(result.createdAt).toBe('2024-01-01T10:00:00.000Z');
   });
 
-  it('persists the updated list via saveAll', async () => {
-    mockFindAll.mockResolvedValue([{ ...existing }]);
-    mockSaveAll.mockResolvedValue(undefined);
+  it('persists the update via repository.update', async () => {
+    mockFindById.mockResolvedValue({ ...existing });
+    mockUpdate.mockResolvedValue({
+      ...existing,
+      name: 'New Name',
+      email: 'new@example.com',
+      message: 'Updated',
+    });
     const useCase = new UpdateSubmissionUseCase(mockRepo);
 
     await useCase.execute('sub-1', {
@@ -55,14 +69,16 @@ describe('UpdateSubmissionUseCase', () => {
       message: 'Updated',
     });
 
-    expect(mockSaveAll).toHaveBeenCalledOnce();
-    const saved: Submission[] = mockSaveAll.mock.calls[0][0];
-    expect(saved[0].id).toBe('sub-1');
-    expect(saved[0].name).toBe('New Name');
+    expect(mockUpdate).toHaveBeenCalledOnce();
+    expect(mockUpdate).toHaveBeenCalledWith('sub-1', expect.objectContaining({
+      name: 'New Name',
+      email: 'new@example.com',
+      message: 'Updated',
+    }));
   });
 
   it('throws "Submission not found" when id does not exist', async () => {
-    mockFindAll.mockResolvedValue([{ ...existing }]);
+    mockFindById.mockResolvedValue(null);
     const useCase = new UpdateSubmissionUseCase(mockRepo);
 
     await expect(
@@ -73,11 +89,11 @@ describe('UpdateSubmissionUseCase', () => {
       }),
     ).rejects.toThrow('Submission not found');
 
-    expect(mockSaveAll).not.toHaveBeenCalled();
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 
   it('throws validation error when updated data is invalid', async () => {
-    mockFindAll.mockResolvedValue([{ ...existing }]);
+    mockFindById.mockResolvedValue({ ...existing });
     const useCase = new UpdateSubmissionUseCase(mockRepo);
 
     await expect(
@@ -88,12 +104,17 @@ describe('UpdateSubmissionUseCase', () => {
       }),
     ).rejects.toThrow('Name is required');
 
-    expect(mockSaveAll).not.toHaveBeenCalled();
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 
   it('lowercases the new email', async () => {
-    mockFindAll.mockResolvedValue([{ ...existing }]);
-    mockSaveAll.mockResolvedValue(undefined);
+    mockFindById.mockResolvedValue({ ...existing });
+    mockUpdate.mockResolvedValue({
+      ...existing,
+      name: 'Ivan',
+      email: 'ivan@example.com',
+      message: 'Hello',
+    });
     const useCase = new UpdateSubmissionUseCase(mockRepo);
 
     const result = await useCase.execute('sub-1', {
@@ -103,31 +124,35 @@ describe('UpdateSubmissionUseCase', () => {
     });
 
     expect(result.email).toBe('ivan@example.com');
+    expect(mockUpdate).toHaveBeenCalledWith('sub-1', expect.objectContaining({
+      email: 'ivan@example.com',
+    }));
   });
 
-  it('handles multiple submissions and only updates the matching one', async () => {
-    const second: Submission = {
-      id: 'sub-2',
-      name: 'Other',
-      email: 'other@example.com',
-      message: 'Other message',
-      createdAt: '2024-02-01T10:00:00.000Z',
-    };
-    mockFindAll.mockResolvedValue([{ ...existing }, { ...second }]);
-    mockSaveAll.mockResolvedValue(undefined);
+  it('passes city, country and status through to the repository', async () => {
+    mockFindById.mockResolvedValue({ ...existing });
+    mockUpdate.mockResolvedValue({
+      ...existing,
+      city: 'Sofia',
+      country: 'Bulgaria',
+      status: 'Approved',
+    });
     const useCase = new UpdateSubmissionUseCase(mockRepo);
 
-    await useCase.execute('sub-1', {
-      name: 'Updated',
-      email: 'updated@example.com',
-      message: 'Updated msg',
+    const result = await useCase.execute('sub-1', {
+      name: 'Old Name',
+      email: 'old@example.com',
+      message: 'Old message',
+      city: 'Sofia',
+      country: 'Bulgaria',
+      status: 'Approved',
     });
 
-    const saved: Submission[] = mockSaveAll.mock.calls[0][0];
-    const updatedEntry = saved.find(s => s.id === 'sub-1')!;
-    const untouchedEntry = saved.find(s => s.id === 'sub-2')!;
-
-    expect(updatedEntry.name).toBe('Updated');
-    expect(untouchedEntry.name).toBe('Other');
+    expect(mockUpdate).toHaveBeenCalledWith('sub-1', expect.objectContaining({
+      city: 'Sofia',
+      country: 'Bulgaria',
+      status: 'Approved',
+    }));
+    expect(result.status).toBe('Approved');
   });
 });

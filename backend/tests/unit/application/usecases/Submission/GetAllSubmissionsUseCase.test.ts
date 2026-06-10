@@ -9,6 +9,9 @@ const mockRepo: ISubmissionRepository = {
   save: vi.fn(),
   findAll: mockFindAll,
   findById: vi.fn(),
+  findByEmail: vi.fn(),
+  update: vi.fn(),
+  deleteById: vi.fn(),
   saveAll: vi.fn(),
 };
 
@@ -21,6 +24,7 @@ const makeSubmission = (id: string, createdAt: string): Submission => ({
   name: 'Test User',
   email: 'test@example.com',
   message: 'Hello',
+  status: 'Open',
   createdAt,
 });
 
@@ -84,6 +88,9 @@ describe('GetAllSubmissionsUseCase', () => {
     sub.name = 'Ivan';
     sub.email = 'ivan@test.com';
     sub.message = 'My message';
+    sub.city = 'Sofia';
+    sub.country = 'Bulgaria';
+    sub.status = 'In Review';
     mockFindAll.mockResolvedValue([sub]);
     const useCase = new GetAllSubmissionsUseCase(mockRepo);
 
@@ -94,6 +101,9 @@ describe('GetAllSubmissionsUseCase', () => {
       name: 'Ivan',
       email: 'ivan@test.com',
       message: 'My message',
+      city: 'Sofia',
+      country: 'Bulgaria',
+      status: 'In Review',
       createdAt: '2024-06-01T12:00:00.000Z',
     });
   });

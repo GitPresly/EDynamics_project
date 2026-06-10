@@ -9,6 +9,9 @@ const mockRepo: ISubmissionRepository = {
   save: vi.fn(),
   findAll: vi.fn(),
   findById: mockFindById,
+  findByEmail: vi.fn(),
+  update: vi.fn(),
+  deleteById: vi.fn(),
   saveAll: vi.fn(),
 };
 
@@ -21,6 +24,7 @@ const stubSubmission: Submission = {
   name: 'Ivan Ivanov',
   email: 'ivan@example.com',
   message: 'Test message',
+  status: 'Open',
   createdAt: '2024-06-01T10:00:00.000Z',
 };
 

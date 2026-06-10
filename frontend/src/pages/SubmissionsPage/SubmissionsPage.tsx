@@ -43,6 +43,15 @@ export const SubmissionsPage: React.FC = () => {
     window.location.hash = `#edit/${submission.id}`;
   };
 
+  const handleDelete = async (id: string) => {
+    try {
+      await apiService.deleteSubmission(id);
+      setSubmissions((prev) => prev.filter((s) => s.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete submission');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="submissions-page">
@@ -90,6 +99,7 @@ export const SubmissionsPage: React.FC = () => {
               key={submission.id}
               submission={submission}
               onEdit={handleEdit}
+              onDelete={handleDelete}
             />
           ))}
         </div>

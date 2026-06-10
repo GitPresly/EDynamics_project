@@ -10,6 +10,12 @@ export class CreateSubmissionUseCase {
     // Create entity with validation
     const submission = SubmissionEntity.create(request);
 
+    // Reject duplicate emails with a friendly message
+    const existing = await this.repository.findByEmail(submission.email);
+    if (existing) {
+      throw new Error('A submission with this email already exists');
+    }
+
     // Save to repository
     await this.repository.save(submission);
 

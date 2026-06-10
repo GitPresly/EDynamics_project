@@ -1,4 +1,4 @@
-import type { SubmissionStatus } from '../../../domain/entities/Submission/Submission';
+import { SubmissionStatus } from '../../../domain/entities/Submission/Submission';
 
 export interface UpdateSubmissionRequest {
   name: string;
